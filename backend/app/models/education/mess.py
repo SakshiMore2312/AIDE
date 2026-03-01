@@ -2,6 +2,7 @@ import enum
 from sqlalchemy import Column, Integer, String, Text, Boolean, Float, Enum, DateTime, func
 from sqlalchemy.orm import relationship
 from app.core.database import Base
+from sqlalchemy.orm import relationship
 
 
 class MessType(str, enum.Enum):

@@ -2,7 +2,7 @@ import enum
 from sqlalchemy import Column, Integer, String, Text, Enum, DateTime, Boolean, func
 from sqlalchemy.orm import relationship
 from app.core.database import Base
-
+from sqlalchemy.orm import relationship
 
 # School Type Enum
 class SchoolType(str, enum.Enum):

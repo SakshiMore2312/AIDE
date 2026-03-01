@@ -15,6 +15,36 @@ from app.core.database import Base
 
 
 class Review(Base):
+    """
+    Review model stores user feedback (rating + content) for any entity.
+
+    This model is designed to support POLYMORPHIC reviews, meaning a review
+    can belong to different types of entities such as:
+
+        - College
+        - School
+        - Hostel
+        - Mess
+        - Coaching
+        - Medical
+        - etc.
+
+    Instead of having separate tables like:
+        college_reviews
+        school_reviews
+        hostel_reviews
+
+    We use a single reviews table with:
+        entity_type → tells WHAT is being reviewed
+        entity_id   → tells WHICH record is being reviewed
+
+    Example:
+        entity_type = "college"
+        entity_id   = 5
+
+        → Means this review is for College with id=5
+    """
+
     __tablename__ = "reviews"
 
     # -------------------------
