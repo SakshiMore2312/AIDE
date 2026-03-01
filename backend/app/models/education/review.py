@@ -17,46 +17,23 @@ from app.core.database import Base
 class Review(Base):
     """
     Review model stores user feedback (rating + content) for any entity.
-
-    This model is designed to support POLYMORPHIC reviews, meaning a review
-    can belong to different types of entities such as:
-
-        - College
-        - School
-        - Hostel
-        - Mess
-        - Coaching
-        - Medical
-        - etc.
-
-    Instead of having separate tables like:
-        college_reviews
-        school_reviews
-        hostel_reviews
-
-    We use a single reviews table with:
-        entity_type → tells WHAT is being reviewed
-        entity_id   → tells WHICH record is being reviewed
-
-    Example:
-        entity_type = "college"
-        entity_id   = 5
-
-        → Means this review is for College with id=5
+    
+    Each review is linked to ONE entity through foreign keys:
+    - college_id
+    - school_id
+    - hostel_id
+    - mess_id
+    - coaching_id
+    
+    Only ONE of these will be non-null for any given review.
     """
 
     __tablename__ = "reviews"
 
-    # -------------------------
-    # Primary Key
-    # -------------------------
     id = Column(Integer, primary_key=True, index=True)
-
-    # -------------------------
+    
     # Review Content
-    # -------------------------
     content = Column(Text, nullable=False)
-
     rating = Column(Integer, nullable=False)
 
     # Ensure rating is between 1 and 5
@@ -67,31 +44,29 @@ class Review(Base):
         ),
     )
 
-    # -------------------------
-    # Polymorphic Review Target
-    # -------------------------
+    # Foreign Keys to different entity types (polymorphic)
+    college_id = Column(Integer, ForeignKey("colleges.id", ondelete="CASCADE"), nullable=True, index=True)
+    school_id = Column(Integer, ForeignKey("schools.id", ondelete="CASCADE"), nullable=True, index=True)
+    hostel_id = Column(Integer, ForeignKey("hostels.id", ondelete="CASCADE"), nullable=True, index=True)
+    mess_id = Column(Integer, ForeignKey("mess.id", ondelete="CASCADE"), nullable=True, index=True)
+    coaching_id = Column(Integer, ForeignKey("coachings.id", ondelete="CASCADE"), nullable=True, index=True)
 
-    # Type of entity being reviewed
-    # Example: "college", "mess", "coaching"
-    entity_type = Column(String(50), nullable=False)
-
-    # ID of the entity being reviewed
-    entity_id = Column(Integer, nullable=False)
-
-    # -------------------------
-    # User Relationship
-    # -------------------------
+    # User who wrote the review
     user_id = Column(
         Integer,
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False
     )
 
+    # Relationships
     user = relationship("User", back_populates="reviews")
+    college = relationship("College", back_populates="reviews")
+    school = relationship("School", back_populates="reviews")
+    hostel = relationship("Hostel", back_populates="reviews")
+    mess = relationship("Mess", back_populates="reviews")
+    coaching = relationship("Coaching", back_populates="reviews")
 
-    # -------------------------
     # Timestamps
-    # -------------------------
     created_at = Column(
         DateTime(timezone=True),
         server_default=func.now(),
@@ -105,7 +80,5 @@ class Review(Base):
         nullable=False
     )
 
-    # -------------------------
     # Soft Delete
-    # -------------------------
     is_active = Column(Boolean, default=True, nullable=False)

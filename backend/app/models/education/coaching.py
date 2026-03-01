@@ -8,6 +8,7 @@ from sqlalchemy import (
     DateTime,
     func,
 )
+from sqlalchemy.orm import relationship
 from app.core.database import Base
 
 
@@ -24,7 +25,7 @@ class Coaching(Base):
     established_year = Column(Integer, nullable=True, index=True)
     courses_offered = Column(Text, nullable=True)
     exam_preparation_type = Column(String(255), nullable=True, index=True)
-    coaching_type = Column(Enum(CoachingType),nullable=False,default=CoachingType.OFFLINE)
+    coaching_type = Column(Enum(CoachingType), nullable=False, default=CoachingType.OFFLINE)
     description = Column(Text, nullable=True)
     address = Column(Text, nullable=False)
     phone_number = Column(String(20), nullable=False, index=True)
@@ -34,6 +35,8 @@ class Coaching(Base):
     batch_timings = Column(String(255), nullable=True)
     fees = Column(String(100), nullable=True)
     faculty_details = Column(Text, nullable=True)
-    reviews = Column(Text, nullable=True)
-    created_at = Column(DateTime(timezone=True),server_default=func.now(),nullable=False)
-    updated_at = Column(DateTime(timezone=True),server_default=func.now(),onupdate=func.now(),nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    # Reviews relationship
+    reviews = relationship("Review", back_populates="coaching", cascade="all, delete-orphan")

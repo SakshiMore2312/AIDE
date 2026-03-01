@@ -2,7 +2,6 @@ import enum
 from sqlalchemy import Column, Integer, String, Text, Enum, DateTime, Boolean, func
 from sqlalchemy.orm import relationship
 from app.core.database import Base
-from sqlalchemy.orm import relationship
 
 # School Type Enum
 class SchoolType(str, enum.Enum):
@@ -38,7 +37,7 @@ class School(Base):
     fees = Column(String(100), nullable=True)
 
     # Reviews relationship
-    reviews = relationship("Review",back_populates="school",cascade="all, delete-orphan")
+    reviews = relationship("Review", back_populates="school", cascade="all, delete-orphan")
 
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
