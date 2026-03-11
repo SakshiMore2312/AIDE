@@ -7,6 +7,9 @@ from app.api.v1.endpoints.education import mess
 from app.api.v1.endpoints.stay import hostels
 from app.api.v1.endpoints.stay import pg
 from app.api.v1.endpoints.profile import profile
+from app.api.v1.endpoints import user
+from app.api.v1.endpoints import settings
+from app.api.v1.endpoints import notification
 
 
 api_router = APIRouter()
@@ -57,4 +60,22 @@ api_router.include_router(
     profile.router,
     prefix="/profile",
     tags=["Profile"]
+)
+
+api_router.include_router(
+    user.router,
+    prefix="/users",
+    tags=["Users"]
+)
+
+api_router.include_router(
+    settings.router,
+    prefix="/settings",
+    tags=["Settings"]
+)
+
+api_router.include_router(
+    notification.router,
+    prefix="/notifications",
+    tags=["Notifications"]
 )
