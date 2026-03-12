@@ -29,7 +29,7 @@ async def get_coaching_classes(
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
-    coaching_classes = db.query(Coaching).offset(skip).limit(limit).all()
+    coaching_classes = db.query(Coaching).filter(Coaching.is_active == True).offset(skip).limit(limit).all()
     return coaching_classes
 
 # ------------------- GET ONE -------------------
@@ -39,7 +39,7 @@ async def get_coaching_class(
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
-    coaching = db.query(Coaching).filter(Coaching.id == coaching_id).first()
+    coaching = db.query(Coaching).filter(Coaching.id == coaching_id, Coaching.is_active == True).first()
 
     if not coaching:
         raise HTTPException(
@@ -90,7 +90,7 @@ async def update_coaching_class(
     db: Session = Depends(get_db),
     current_user = Depends(require_roles(["ADMIN"]))
 ):
-    coaching = db.query(Coaching).filter(Coaching.id == coaching_id).first()
+    coaching = db.query(Coaching).filter(Coaching.id == coaching_id, Coaching.is_active == True).first()
 
     if not coaching:
         raise HTTPException(
@@ -133,7 +133,7 @@ async def delete_coaching_class(
     db: Session = Depends(get_db),
     current_user = Depends(require_roles(["ADMIN"]))
 ):
-    coaching = db.query(Coaching).filter(Coaching.id == coaching_id).first()
+    coaching = db.query(Coaching).filter(Coaching.id == coaching_id, Coaching.is_active == True).first()
 
     if not coaching:
         raise HTTPException(
@@ -141,7 +141,8 @@ async def delete_coaching_class(
             detail="Coaching class not found"
         )
 
-    db.delete(coaching)
+    # Soft delete
+    coaching.is_active = False
     db.commit()
     return None
 

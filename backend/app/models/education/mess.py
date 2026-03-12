@@ -17,6 +17,8 @@ class Mess(Base):
     name = Column(String(255), nullable=False, index=True, unique=True)
     description = Column(Text, nullable=True)
     address = Column(Text, nullable=False)
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
     phone_number = Column(String(50), nullable=False, index=True)
     google_maps_link = Column(Text, nullable=True)
     meal_types = Column(Enum(MessType), nullable=False, default=MessType.BOTH, index=True)
@@ -26,6 +28,9 @@ class Mess(Base):
     hygiene_rating = Column(Float, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    # Soft delete
+    is_active = Column(Boolean, default=True, nullable=False)
 
     # Reviews relationship
     reviews = relationship("Review", back_populates="mess", cascade="all, delete-orphan")

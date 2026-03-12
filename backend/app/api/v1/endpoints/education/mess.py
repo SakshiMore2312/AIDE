@@ -29,7 +29,7 @@ async def get_mess_list(
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
-    mess_list = db.query(Mess).offset(skip).limit(limit).all()
+    mess_list = db.query(Mess).filter(Mess.is_active == True).offset(skip).limit(limit).all()
     return mess_list
 
 # ------------------- GET ONE -------------------
@@ -39,7 +39,7 @@ async def get_mess(
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
-    mess = db.query(Mess).filter(Mess.id == mess_id).first()
+    mess = db.query(Mess).filter(Mess.id == mess_id, Mess.is_active == True).first()
 
     if not mess:
         raise HTTPException(
@@ -90,7 +90,7 @@ async def update_mess(
     db: Session = Depends(get_db),
     current_user = Depends(require_roles(["ADMIN"]))
 ):
-    mess = db.query(Mess).filter(Mess.id == mess_id).first()
+    mess = db.query(Mess).filter(Mess.id == mess_id, Mess.is_active == True).first()
 
     if not mess:
         raise HTTPException(
@@ -133,7 +133,7 @@ async def delete_mess(
     db: Session = Depends(get_db),
     current_user = Depends(require_roles(["ADMIN"]))
 ):
-    mess = db.query(Mess).filter(Mess.id == mess_id).first()
+    mess = db.query(Mess).filter(Mess.id == mess_id, Mess.is_active == True).first()
 
     if not mess:
         raise HTTPException(
@@ -141,7 +141,8 @@ async def delete_mess(
             detail="Mess not found"
         )
 
-    db.delete(mess)
+    # Soft delete
+    mess.is_active = False
     db.commit()
     return None
 

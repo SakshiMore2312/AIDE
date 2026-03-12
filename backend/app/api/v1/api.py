@@ -10,6 +10,7 @@ from app.api.v1.endpoints.profile import profile
 from app.api.v1.endpoints import user
 from app.api.v1.endpoints import settings
 from app.api.v1.endpoints import notification
+from app.api.v1.endpoints.medical import hospitals, doctors, blood_banks, ambulances
 
 
 api_router = APIRouter()
@@ -22,44 +23,37 @@ api_router.include_router(
 
 api_router.include_router(
     colleges.router,
-    prefix="/education/colleges",
-    tags=["Colleges"]
+    prefix="/education"
 )
 
 api_router.include_router(
     schools.router,
-    prefix="/education/schools",
-    tags=["Schools"]
+    prefix="/education"
 )
 
 api_router.include_router(
     coaching.router,
-    prefix="/education/coaching",
-    tags=["Coaching"]
+    prefix="/education"
 )
 
 api_router.include_router(
     mess.router,
-    prefix="/education/mess",
-    tags=["Mess"]
+    prefix="/education"
 )
 
 api_router.include_router(
     hostels.router,
-    prefix="/stay/hostels",
-    tags=["Hostels"]
+    prefix="/stay"
 )
 
 api_router.include_router(
     pg.router,
-    prefix="/stay/pgs",
-    tags=["PGs"]
+    prefix="/stay"
 )
 
 api_router.include_router(
     profile.router,
-    prefix="/profile",
-    tags=["Profile"]
+    prefix="/profile"
 )
 
 api_router.include_router(
@@ -69,13 +63,16 @@ api_router.include_router(
 )
 
 api_router.include_router(
-    settings.router,
-    prefix="/settings",
-    tags=["Settings"]
+    settings.router
 )
 
 api_router.include_router(
-    notification.router,
-    prefix="/notifications",
-    tags=["Notifications"]
+    notification.router
 )
+
+# Medical Group
+api_router.include_router(hospitals.router, prefix="/medical")
+api_router.include_router(doctors.router, prefix="/medical")
+api_router.include_router(blood_banks.router, prefix="/medical")
+api_router.include_router(ambulances.router, prefix="/medical")
+

@@ -7,6 +7,10 @@ class PGBase(BaseModel):
     name: str = Field(..., min_length=3, max_length=255)
     description: Optional[str] = None
     address: str
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    deposit: Optional[int] = None
+    ac_available: Optional[bool] = False
     phone_number: Optional[str] = Field(None, max_length=20)
     email: Optional[EmailStr] = None
     google_maps_link: Optional[HttpUrl] = None
@@ -25,6 +29,10 @@ class PGUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=3, max_length=255)
     description: Optional[str] = None
     address: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    deposit: Optional[int] = None
+    ac_available: Optional[bool] = None
     phone_number: Optional[str] = Field(None, max_length=50)
     email: Optional[EmailStr] = None
     google_maps_link: Optional[HttpUrl] = None

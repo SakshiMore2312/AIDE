@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, Float, DateTime, func, Enum
+from sqlalchemy import Column, Integer, String, Text, Float, DateTime, func, Enum, Boolean
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 import enum
@@ -37,6 +37,9 @@ class College(Base):
     placement_ratio = Column(Float, nullable=True)
     created_at = Column(DateTime(timezone=True),server_default=func.now(),nullable=False)
     updated_at = Column(DateTime(timezone=True),server_default=func.now(),onupdate=func.now(),nullable=False)
+
+    # Soft delete
+    is_active = Column(Boolean, default=True, nullable=False)
 
     # One College → Many Reviews
     reviews = relationship("Review", back_populates="college", cascade="all, delete-orphan")

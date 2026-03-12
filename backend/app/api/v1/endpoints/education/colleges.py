@@ -28,7 +28,7 @@ async def get_colleges(
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
-    colleges = db.query(College).offset(skip).limit(limit).all()
+    colleges = db.query(College).filter(College.is_active == True).offset(skip).limit(limit).all()
     return colleges
 
 @router.get("/{college_id}", response_model=CollegeResponse)
@@ -37,7 +37,9 @@ async def get_college(
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
-    college = db.query(College).filter(College.id == college_id).first()
+    college = db.query(College).filter(
+        College.id == college_id, College.is_active == True
+    ).first()
 
     if not college:
         raise HTTPException(
@@ -156,7 +158,8 @@ async def delete_college(
             detail="College not found"
         )
 
-    db.delete(college)
+    # Soft delete
+    college.is_active = False
     db.commit()
 
     return None

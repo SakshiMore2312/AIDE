@@ -10,6 +10,8 @@ class CollegeBase(BaseModel):
     college_code: Optional[str] = Field(None, max_length=50)
     description: Optional[str] = None
     address: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
     phone_number: Optional[str] = Field(None, max_length=50)
     website: Optional[HttpUrl] = None
     google_maps_link: Optional[HttpUrl] = None
@@ -32,6 +34,8 @@ class CollegeUpdate(BaseModel):
     college_code: Optional[str] = None
     description: Optional[str] = None
     address: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
     phone_number: Optional[str] = None
     website: Optional[HttpUrl] = None
     google_maps_link: Optional[HttpUrl] = None
@@ -43,6 +47,7 @@ class CollegeUpdate(BaseModel):
 
 class CollegeResponse(CollegeBase):
     id: int
+    is_active: bool
     created_at: datetime
     updated_at: datetime
 

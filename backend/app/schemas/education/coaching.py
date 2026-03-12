@@ -12,6 +12,8 @@ class CoachingBase(BaseModel):
     exam_preparation_type: Optional[str] = Field(None, max_length=255)
     description: Optional[str] = None
     address: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
     phone_number: Optional[str] = Field(None, max_length=50)
     email: Optional[EmailStr] = None
     website: Optional[HttpUrl] = None
@@ -31,6 +33,8 @@ class CoachingUpdate(BaseModel):
     exam_preparation_type: Optional[str] = None
     description: Optional[str] = None
     address: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
     phone_number: Optional[str] = None
     email: Optional[EmailStr] = None
     website: Optional[HttpUrl] = None
@@ -41,6 +45,7 @@ class CoachingUpdate(BaseModel):
 
 class CoachingResponse(CoachingBase):
     id: int
+    is_active: bool
     created_at: datetime
     updated_at: datetime
 

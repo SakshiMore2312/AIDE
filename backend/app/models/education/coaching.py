@@ -1,5 +1,5 @@
 import enum
-from sqlalchemy import Float, Column, Integer, String, Text, Enum, DateTime, func
+from sqlalchemy import Float, Column, Integer, String, Text, Enum, DateTime, func, Boolean
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 
@@ -35,6 +35,9 @@ class Coaching(Base):
     faculty_details = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    # Soft delete
+    is_active = Column(Boolean, default=True, nullable=False)
 
     # Reviews relationship
     reviews = relationship("Review", back_populates="coaching", cascade="all, delete-orphan")

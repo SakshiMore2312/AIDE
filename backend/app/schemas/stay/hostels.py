@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, EmailStr, HttpUrl
 from typing import Optional
 from datetime import datetime
 from app.models.stay.hostels import GenderType, RoomType
@@ -8,10 +8,14 @@ class HostelBase(BaseModel):
     gender: GenderType
     description: Optional[str] = None
     address: str
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    deposit: Optional[int] = None
+    ac_available: Optional[bool] = False
     phone_number: Optional[str] = None
-    email: Optional[str] = None
-    website: Optional[str] = None
-    google_maps_link: Optional[str] = None
+    email: Optional[EmailStr] = None
+    website: Optional[HttpUrl] = None
+    google_maps_link: Optional[HttpUrl] = None
     room_type: RoomType
     facilities_available: Optional[str] = None
     mess_available: Optional[bool] = False
@@ -27,10 +31,14 @@ class HostelUpdate(BaseModel):
     gender: Optional[GenderType] = None
     description: Optional[str] = None
     address: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    deposit: Optional[int] = None
+    ac_available: Optional[bool] = None
     phone_number: Optional[str] = None
-    email: Optional[str] = None
-    website: Optional[str] = None
-    google_maps_link: Optional[str] = None
+    email: Optional[EmailStr] = None
+    website: Optional[HttpUrl] = None
+    google_maps_link: Optional[HttpUrl] = None
     room_type: Optional[RoomType] = None
     facilities_available: Optional[str] = None
     mess_available: Optional[bool] = None

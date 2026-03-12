@@ -8,6 +8,8 @@ class MessBase(BaseModel):
     meal_types: MessType
     description: Optional[str] = None
     address: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
     phone_number: Optional[str] = Field(None, max_length=50)
     google_maps_link: Optional[HttpUrl] = None
     monthly_charges: Optional[str] = Field(None, max_length=100)
@@ -23,6 +25,8 @@ class MessUpdate(BaseModel):
     meal_types: Optional[MessType] = None
     description: Optional[str] = None
     address: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
     phone_number: Optional[str] = Field(None, max_length=50)
     google_maps_link: Optional[HttpUrl] = None
     monthly_charges: Optional[str] = Field(None, max_length=100)
@@ -32,6 +36,7 @@ class MessUpdate(BaseModel):
 
 class MessResponse(MessBase):
     id: int
+    is_active: bool
     created_at: datetime
     updated_at: datetime
 
