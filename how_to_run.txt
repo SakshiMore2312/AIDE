@@ -50,7 +50,7 @@ Ensure your database schema is up-to-date before running the app.
 5. RUNNING THE APPLICATION
 --------------------------
 Start the FastAPI server:
-uvicorn app.main:app --reload
+uvicorn app.main:app --reload --port 8000
 
 - Swagger UI: http://localhost:8000/docs
 - ReDoc: http://localhost:8000/redoc

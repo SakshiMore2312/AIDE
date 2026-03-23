@@ -44,6 +44,12 @@ class User(Base):
     is_active = Column(Boolean, nullable=False, default=True)
 
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    
+    # Email Verification & Password Reset
+    is_verified = Column(Boolean, nullable=False, default=False)
+    verification_token = Column(String(500), nullable=True)
+    password_reset_token = Column(String(500), nullable=True)
+    token_expiry = Column(DateTime, nullable=True)
 
     reviews = relationship(
         "Review",

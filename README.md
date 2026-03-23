@@ -1,102 +1,119 @@
-# EduCare Connect Backend
+# Aide - Comprehensive Student & Essential Services Platform
 
-EduCare Connect is a comprehensive platform designed to bridge the gap between students, parents, and essential services like education, accommodation, and medical support.
+**Aide** (formerly EduCare Connect) is a modern, high-performance platform designed to bridge the gap between students, parents, and essential local services. It provides a unified ecosystem for education, accommodation, and medical support, enhanced by real-time location-based searching.
 
-This repository contains the **FastAPI-based Backend** for the EduCare Connect mobile application (built with Flutter).
-
-## 🚀 Features
-
-### 👤 User & Profile Management
-- **Authentication**: JWT-based secure login and registration with Role-Based Access Control (RBAC).
-- **Comprehensive Profiles**: Management of user details including emergency contacts, blood group, social handles, and profile images.
-
-### 🎓 Education Module
-- **Colleges, Schools, & Coaching**: Extensive database of educational institutions.
-- **Mess Services**: Directory of meal providers for students.
-- **Location-Based Search**: Find institutions and services nearby using real-time distance calculation.
-
-### 🏠 Stay Module (Accommodation)
-- **Hostels & PGs**: Detailed listings for student accommodation with filters for gender, rent, deposit, and AC availability.
-- **Nearby Search**: Quick access to stays closest to the user's current location.
-
-### 🏥 Medical Module
-- **Hospitals, Doctors, & Blood Banks**: Essential medical directory for emergencies.
-- **Ambulances**: Quick contact and location data for ambulance providers.
-
-### ⭐ Engagement
-- **Review System**: Users can rate and review institutions and stays.
-- **Soft Deletion**: All data is managed with an `is_active` flag to ensure data integrity and easy recovery.
+This repository contains the **FastAPI-based Backend** that powers the **Aide Flutter Mobile Application**.
 
 ---
 
-## 🛠️ Technology Stack
-- **Framework**: [FastAPI](https://fastapi.tiangolo.com/)
-- **Database**: **PostgreSQL** (Used for both local development and production)
+## 🚀 Key Features
+
+### 🔐 1. Secure Authentication & Identity
+- **JWT-Based Auth**: Secure login and registration with Access and Refresh token rotation.
+- **Email Verification**: Mandatory account verification via **Mailgun SMTP** to ensure user authenticity.
+- **Password Recovery**: Automated "Forgot Password" flow with secure reset tokens.
+- **RBAC**: Multi-role system (Admin, Student) with granular permissions.
+
+### 🎓 2. Education Hub
+- **Database of Institutes**: Detailed listings for Colleges, Schools, and Coaching Classes.
+- **Mess Services**: Integrated directory for student meal providers.
+- **Advanced Filtering**: Sort by type (Government/Private), board (CBSE/ICSE), and more.
+
+### 🏠 3. Stay & Accommodation
+- **Hostels & PGs**: Comprehensive listings for student stays.
+- **Smart Filters**: Filter by gender (Boys/Girls/Co-ed), rent, deposit, and specific amenities (AC/Wi-Fi).
+
+### 🏥 4. Medical Emergency & Healthcare
+- **Emergency Directory**: Quick access to Hospitals and Ambulance providers.
+- **Blood Bank Tracker**: Real-time availability tracking for specific blood groups (A+, O-, etc.).
+- **Doctor Directory**: Search for specialists across various hospitals.
+
+### 📍 5. Geographic Intelligence
+- **Nearby Search**: High-precision location-based search using the **Haversine Formula**.
+- **Proximity Sorting**: All services (Education, Stay, Medical) can be sorted by real-time distance from the user.
+
+---
+
+## 🛠️ Technical Stack
+
+### **Backend (FastAPI)**
+- **Framework**: [FastAPI](https://fastapi.tiangolo.com/) (Python 3.11+)
+- **Database**: **PostgreSQL** (Production-grade relational database)
 - **ORM**: [SQLAlchemy](https://www.sqlalchemy.org/)
 - **Migrations**: [Alembic](https://alembic.sqlalchemy.org/)
-- **Frontend**: Flutter (Mobile Application)
+- **Validation**: [Pydantic v2](https://docs.pydantic.dev/) for strict type safety.
+- **Email**: **Mailgun SMTP Integration** via `smtplib`.
+- **Auth**: JWT with `python-jose` and Password hashing with `bcrypt`.
+
+### **Frontend (Mobile)**
+- **Framework**: **Flutter** (Cross-platform mobile application)
+- **Primary Platform**: Android & iOS
+- **Integration**: RESTful API communication with the FastAPI backend.
 
 ---
 
-## 🏃 How to Run
+## 🏁 Getting Started
 
 ### 1. Prerequisites
 - Python 3.11+
 - **PostgreSQL** installed and running
-- Virtual Environment (recommended)
+- A Mailgun (or any SMTP) account for email features.
 
-### 2. Setup
-```powershell
-# Navigate to backend directory
+### 2. Backend Installation
+```bash
+# Navigate to the backend directory
 cd backend
 
-# Create and activate virtual environment
+# Create and activate a virtual environment
 python -m venv venv
-.\venv\Scripts\activate
+source venv/bin/activate  # On Windows: .\venv\Scripts\activate
 
 # Install dependencies
 pip install -r requirements.txt
 ```
 
-### 3. Environment Configuration
+### 3. Environment Setup
 Create a `.env` file in the `backend/` directory:
 ```env
-DATABASE_URL=postgresql+psycopg2://user:password@localhost:5432/educare_connect
-SECRET_KEY=your_super_secret_key_here
+DATABASE_URL=postgresql+psycopg2://user:password@localhost:5432/aide_db
+SECRET_KEY=your_secure_random_key_here
 ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
+
+# SMTP Configuration
+SMTP_HOST=smtp.mailgun.org
+SMTP_PORT=587
+SMTP_USER=your_user@domain.com
+SMTP_PASSWORD=your_password
+SMTP_FROM_EMAIL=noreply@aide.com
+SMTP_FROM_NAME="Aide Support"
+
+# App Settings
+SSO_BACKEND_PUBLIC_URL=http://localhost:8000
 ```
 
-### 4. Run the Server
-```powershell
-uvicorn app.main:app --reload
-```
-The API will be available at `http://localhost:8000`. You can access the interactive documentation at `http://localhost:8000/docs`.
-
-### 5. Database Migrations
-Whenever you update models:
-```powershell
-# Generate migration
-alembic revision --autogenerate -m "Description of changes"
-
-# Apply migration
+### 4. Database Initialization
+```bash
+# Apply migrations to create the schema
 alembic upgrade head
+
+# Create the initial Admin user
+python scripts/init_db.py
 ```
 
----
-
-## 📍 Nearby Search Implementation
-The backend uses the **Haversine Formula** to calculate distances in kilometers. 
-Example query parameters for nearby search:
-- `lat`: User's current latitude
-- `lon`: User's current longitude
-- `radius`: Search radius in kilometers (e.g., `5.0`)
-- `name`: Filter by name/provider
+### 5. Run the Server
+```bash
+uvicorn app.main:app --reload --port 8000
+```
+- **Swagger Documentation**: [http://localhost:8000/docs](http://localhost:8000/docs)
+- **ReDoc Documentation**: [http://localhost:8000/redoc](http://localhost:8000/redoc)
 
 ---
 
-## 📝 Current Scope Note
-- **Database**: Exclusively using **PostgreSQL**. No SQLite support is included.
-- **Notifications & SMTP**: Currently disabled (no active email provider/SMTP).
-- **ML Integration**: Currently postponed for future scope.
-- **Frontend**: The mobile application is built using **Flutter**.
+## 📍 Location Search Specs
+The backend calculates geographic proximity in kilometers.
+- **Param `lat`**: User's current latitude.
+- **Param `lon`**: User's current longitude.
+- **Param `radius`**: Maximum search radius (e.g., `10.0`).
+
+## 🛡️ License
+This project is for educational and service-oriented purposes. All rights reserved by the development team.

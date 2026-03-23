@@ -18,7 +18,7 @@ from app.models.user import User, UserRole
 from app.core.security import get_password_hash
 
 
-ADMIN_EMAIL = "admin@educareconnect.com"
+ADMIN_EMAIL = "admin@aide.com"
 ADMIN_PASSWORD = "admin123"  # ⚠ CHANGE IN REAL PRODUCTION
 ADMIN_FULL_NAME = "Super Admin"
 

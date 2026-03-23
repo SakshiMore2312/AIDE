@@ -2,7 +2,7 @@ import re
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
-from datetime import timedelta
+from datetime import timedelta, datetime
 from app.core.database import get_db
 from app.core.security import (
     verify_password,
@@ -29,8 +29,12 @@ from app.schemas.user import (
     Token,
     RefreshTokenRequest,
     RefreshTokenResponse,
+    ForgotPasswordRequest,
+    ResetPasswordRequest,
 )
-from fastapi.security import OAuth2PasswordRequestForm 
+from fastapi.security import OAuth2PasswordRequestForm
+import uuid
+from app.services.email import send_verification_email, send_password_reset_email
 
 router = APIRouter()
 
@@ -52,20 +56,26 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
         # Hash password
         hashed_password = get_password_hash(user_data.password)
 
-        # Create user
+        # Create user with verification token
+        verification_token = str(uuid.uuid4())
         db_user = User(
             full_name=user_data.full_name.strip(),
             email=email,
             hashed_password=hashed_password,
-            role=UserRole.USER,  # force default role
+            role=UserRole.USER,
             is_active=True,
+            is_verified=False,
+            verification_token=verification_token
         )
 
         db.add(db_user)
         db.commit()
         db.refresh(db_user)
 
-        logger.info(f"User registered successfully: {db_user.id}")
+        # Send verification email
+        send_verification_email(email, verification_token)
+
+        logger.info(f"User registered successfully: {db_user.id}. Verification email sent.")
 
         return UserResponse.model_validate(db_user)
 
@@ -97,6 +107,9 @@ async def login(
 
         if not user.is_active:
             raise ForbiddenError("User account is inactive")
+
+        if not user.is_verified:
+            raise ForbiddenError("Please verify your email address before logging in")
 
         access_token_expires = timedelta(
             minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
@@ -176,3 +189,49 @@ async def refresh_token(refresh_data: RefreshTokenRequest, db: Session = Depends
 @router.get("/me", response_model=UserResponse)
 async def get_current_user_info(current_user: User = Depends(get_current_user)):
     return current_user
+
+# EMAIL VERIFICATION
+@router.get("/verify-email")
+async def verify_email(token: str, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.verification_token == token).first()
+    if not user:
+        raise ValidationError("Invalid or expired verification token")
+    
+    user.is_verified = True
+    user.verification_token = None
+    db.commit()
+    
+    return {"message": "Email verified successfully. You can now log in."}
+
+# FORGOT PASSWORD
+@router.post("/forgot-password")
+async def forgot_password(request: ForgotPasswordRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == request.email.lower()).first()
+    if user:
+        reset_token = str(uuid.uuid4())
+        user.password_reset_token = reset_token
+        user.token_expiry = datetime.utcnow() + timedelta(hours=1)
+        db.commit()
+        
+        send_password_reset_email(user.email, reset_token)
+    
+    # Always return success to prevent email enumeration
+    return {"message": "If an account exists with that email, a reset link has been sent."}
+
+# RESET PASSWORD
+@router.post("/reset-password")
+async def reset_password(request: ResetPasswordRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(
+        User.password_reset_token == request.token,
+        User.token_expiry > datetime.utcnow()
+    ).first()
+    
+    if not user:
+        raise ValidationError("Invalid or expired reset token")
+    
+    user.hashed_password = get_password_hash(request.new_password)
+    user.password_reset_token = None
+    user.token_expiry = None
+    db.commit()
+    
+    return {"message": "Password reset successfully. You can now log in."}

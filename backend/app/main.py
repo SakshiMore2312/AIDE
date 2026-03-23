@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(
-    title="EduCare Connect API",
+    title="aide API",
     version="1.0.0"
 )
 
@@ -40,5 +40,5 @@ app.include_router(api_router, prefix="/api/v1")
 
 @app.get("/")
 def root():
-    return {"message": "EduCare Connect Backend Running"}
+    return {"message": "Aide Backend Running"}
 
