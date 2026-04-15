@@ -1,7 +1,9 @@
+import 'package:educonnect/models/pg.dart';
 import 'package:flutter/material.dart';
 
 class PGDetailsPage extends StatelessWidget {
-  const PGDetailsPage({super.key});
+  final PG pg;
+  const PGDetailsPage({super.key, required this.pg});
 
   Widget sectionTitle(String title) {
     return Padding(
@@ -123,10 +125,16 @@ class PGDetailsPage extends StatelessWidget {
 
                     /// Image
                     Image.network(
-                      "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2",
+                      pg.image ?? "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2",
                       height: 250,
                       width: double.infinity,
                       fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        height: 250,
+                        width: double.infinity,
+                        color: Colors.grey.shade200,
+                        child: const Icon(Icons.home, size: 80, color: Colors.grey),
+                      ),
                     ),
 
                     Padding(
@@ -135,9 +143,9 @@ class PGDetailsPage extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
 
-                          const Text(
-                            "Comfort Living PG",
-                            style: TextStyle(
+                          Text(
+                            pg.name,
+                            style: const TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.bold,
                             ),
@@ -146,13 +154,13 @@ class PGDetailsPage extends StatelessWidget {
                           const SizedBox(height: 8),
 
                           Row(
-                            children: const [
-                              Icon(Icons.star,
+                            children: [
+                              const Icon(Icons.star,
                                   color: Colors.orange, size: 18),
-                              SizedBox(width: 4),
-                              Text("4.5"),
-                              SizedBox(width: 6),
-                              Text("(78 reviews)",
+                              const SizedBox(width: 4),
+                              Text(pg.rating.toString()),
+                              const SizedBox(width: 6),
+                              const Text("(78 reviews)",
                                   style: TextStyle(color: Colors.grey)),
                             ],
                           ),
@@ -160,14 +168,14 @@ class PGDetailsPage extends StatelessWidget {
                           const SizedBox(height: 10),
 
                           Row(
-                            children: const [
-                              Icon(Icons.location_on_outlined,
+                            children: [
+                              const Icon(Icons.location_on_outlined,
                                   size: 16, color: Colors.grey),
-                              SizedBox(width: 4),
+                              const SizedBox(width: 4),
                               Expanded(
                                 child: Text(
-                                  "45 HSR Layout, Sector 2, Bangalore",
-                                  style: TextStyle(color: Colors.grey),
+                                  pg.address,
+                                  style: const TextStyle(color: Colors.grey),
                                 ),
                               ),
                             ],
