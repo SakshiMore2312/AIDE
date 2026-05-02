@@ -31,6 +31,7 @@ from app.schemas.user import (
     RefreshTokenResponse,
     ForgotPasswordRequest,
     ResetPasswordRequest,
+    ChangePasswordRequest,
 )
 from fastapi.security import OAuth2PasswordRequestForm
 import uuid
@@ -47,7 +48,7 @@ from fastapi_limiter.depends import RateLimiter
 from app.api.v1.endpoints.deps import oauth2_scheme
 
 # REGISTER
-@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(RateLimiter(times=5, seconds=60))])
+@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register(user_data: UserCreate, db: Session = Depends(get_db)):
     try:
         # Normalize email
@@ -96,7 +97,7 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
         raise
 
 # LOGIN
-@router.post("/login", response_model=Token, dependencies=[Depends(RateLimiter(times=10, seconds=60))])
+@router.post("/login", response_model=Token)
 async def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db),
@@ -148,7 +149,7 @@ async def login(
         raise UnauthorizedError("Login failed")
 
 # LOGOUT
-@router.post("/logout", dependencies=[Depends(RateLimiter(times=5, seconds=60))])
+@router.post("/logout")
 async def logout(
     current_user: User = Depends(get_current_user),
     token: str = Depends(oauth2_scheme)
@@ -263,3 +264,22 @@ async def reset_password(request: ResetPasswordRequest, db: Session = Depends(ge
     await delete_otp(email)
     
     return {"message": "Password reset successfully. You can now log in."}
+
+# CHANGE PASSWORD
+@router.post("/change-password")
+async def change_password(
+    request: ChangePasswordRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Allow authenticated user to change their password by verifying current password.
+    """
+    if not verify_password(request.current_password, current_user.hashed_password):
+        raise UnauthorizedError("Incorrect current password")
+    
+    current_user.hashed_password = get_password_hash(request.new_password)
+    db.commit()
+    
+    logger.info(f"User changed password: {current_user.id}")
+    return {"message": "Password changed successfully"}

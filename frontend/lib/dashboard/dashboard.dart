@@ -24,14 +24,11 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 244, 244, 247),
       extendBody: true,
       
 
       appBar: AppBar(
         title: const Text("Smart City"),
-        backgroundColor: const Color.fromARGB(255, 254, 252, 252),
-        foregroundColor: Colors.black,
         elevation: 0,
       ),
 
@@ -46,10 +43,6 @@ class _DashboardPageState extends State<DashboardPage> {
       },
 
       type: BottomNavigationBarType.fixed,
-
-      backgroundColor: Colors.white,
-      selectedItemColor: Colors.blue,
-      unselectedItemColor: Colors.grey,
 
       selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
       showUnselectedLabels: true,

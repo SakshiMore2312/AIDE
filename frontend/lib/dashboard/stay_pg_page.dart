@@ -2,6 +2,7 @@ import 'package:educonnect/models/pg.dart';
 import 'package:educonnect/services/api_service.dart';
 import 'package:flutter/material.dart';
 import 'subpage/stay_details.dart';
+import 'widgets/filter_bottom_sheet.dart';
 
 class StayPGPage extends StatefulWidget {
   const StayPGPage({super.key});
@@ -13,17 +14,35 @@ class StayPGPage extends StatefulWidget {
 class _StayPGPageState extends State<StayPGPage> {
   final ApiService _apiService = ApiService();
   late Future<List<PG>> _pgsFuture;
+  String _searchQuery = "";
+  String _sortBy = "name";
+  String _order = "asc";
+  String _minRating = "any";
+  double _radius = 50.0;
 
   @override
   void initState() {
     super.initState();
-    _pgsFuture = _apiService.getPGs();
+    _fetchPGs();
+  }
+
+  void _fetchPGs() {
+    setState(() {
+      _pgsFuture = _apiService.getPGs(
+        query: _searchQuery.isNotEmpty ? _searchQuery : null,
+        lat: 18.52, // Mock Pune Lat
+        lon: 73.85, // Mock Pune Lon
+        radius: _radius,
+        sortBy: _sortBy,
+        order: _order,
+        minRating: _minRating,
+      );
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F6FA),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -58,7 +77,7 @@ class _StayPGPageState extends State<StayPGPage> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Theme.of(context).cardColor,
                         borderRadius: BorderRadius.circular(14),
                         boxShadow: const [
                           BoxShadow(
@@ -67,8 +86,12 @@ class _StayPGPageState extends State<StayPGPage> {
                           ),
                         ],
                       ),
-                      child: const TextField(
-                        decoration: InputDecoration(
+                      child: TextField(
+                        onChanged: (val) {
+                          _searchQuery = val;
+                          _fetchPGs();
+                        },
+                        decoration: const InputDecoration(
                           icon: Icon(Icons.search),
                           hintText: "Search PG & stays...",
                           border: InputBorder.none,
@@ -77,23 +100,43 @@ class _StayPGPageState extends State<StayPGPage> {
                     ),
                   ),
                   const SizedBox(width: 10),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Colors.black12,
-                          blurRadius: 6,
+                  GestureDetector(
+                    onTap: () {
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (context) => FilterBottomSheet(
+                          initialRadius: _radius,
+                          initialSortBy: _sortBy,
+                          initialOrder: _order,
+                          initialMinRating: _minRating,
+                          onApply: (r, s, o, m) {
+                            setState(() {
+                              _radius = r;
+                              _sortBy = s;
+                              _order = o;
+                              _minRating = m;
+                            });
+                            _fetchPGs();
+                          },
                         ),
-                      ],
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).cardColor,
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: const [
+                          BoxShadow(color: Colors.black12, blurRadius: 6),
+                        ],
+                      ),
+                      child: const Icon(Icons.tune),
                     ),
-                    child: const Icon(Icons.tune),
-                  )
+                  ),
                 ],
               ),
-
               const SizedBox(height: 25),
 
               FutureBuilder<List<PG>>(
@@ -144,7 +187,7 @@ class _StayPGPageState extends State<StayPGPage> {
       child: Container(
         margin: const EdgeInsets.only(bottom: 20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(20),
           boxShadow: const [
             BoxShadow(

@@ -20,7 +20,6 @@ class PGBase(BaseModel):
     room_type: RoomType
     facilities_available: Optional[str] = None
     security_features: Optional[str] = None
-    reviews: Optional[str] = None
 
 class PGCreate(PGBase):
     pass
@@ -42,7 +41,6 @@ class PGUpdate(BaseModel):
     room_type: Optional[RoomType] = None
     facilities_available: Optional[str] = None
     security_features: Optional[str] = None
-    reviews: Optional[str] = None
 
 class PGResponse(PGBase):
     id: int

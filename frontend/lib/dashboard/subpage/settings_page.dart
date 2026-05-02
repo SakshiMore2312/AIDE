@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../theme_provider.dart';
+import 'change_password_page.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -10,15 +12,16 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> {
   bool notifications = true;
   bool location = true;
-  bool darkMode = false;
 
   Widget settingTile({
     required IconData icon,
     required String title,
     String? subtitle,
     Widget? trailing,
+    VoidCallback? onTap,
   }) {
     return ListTile(
+      onTap: onTap,
       leading: CircleAvatar(
         backgroundColor: Colors.deepPurple.withOpacity(0.1),
         child: Icon(icon, color: Colors.deepPurple),
@@ -31,117 +34,137 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey.shade100,
-      appBar: AppBar(title: const Text("Settings")),
-      body: ListView(
-        children: [
+    return ListenableBuilder(
+      listenable: themeProvider,
+      builder: (context, _) {
+        return Scaffold(
+          appBar: AppBar(title: const Text("Settings")),
+          body: ListView(
+            children: [
+              /// PREFERENCES
+              const Padding(
+                padding: EdgeInsets.all(16),
+                child: Text("PREFERENCES", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+              ),
 
-          /// PREFERENCES
-          const Padding(
-            padding: EdgeInsets.all(16),
-            child: Text("PREFERENCES",
-                style: TextStyle(color: Colors.grey)),
-          ),
-
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(14)),
-            child: Column(
-              children: [
-
-                settingTile(
-                  icon: Icons.notifications,
-                  title: "Notifications",
-                  subtitle: "Receive alerts",
-                  trailing: Switch(
-                    value: notifications,
-                    onChanged: (v) => setState(() => notifications = v),
-                  ),
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))
+                    ]
                 ),
-
-                settingTile(
-                  icon: Icons.location_on,
-                  title: "Location Access",
-                  subtitle: "Allow access",
-                  trailing: Switch(
-                    value: location,
-                    onChanged: (v) => setState(() => location = v),
-                  ),
+                child: Column(
+                  children: [
+                    settingTile(
+                      icon: Icons.notifications,
+                      title: "Notifications",
+                      subtitle: "Receive alerts",
+                      trailing: Switch(
+                        value: notifications,
+                        onChanged: (v) => setState(() => notifications = v),
+                      ),
+                    ),
+                    settingTile(
+                      icon: Icons.location_on,
+                      title: "Location Access",
+                      subtitle: "Allow access",
+                      trailing: Switch(
+                        value: location,
+                        onChanged: (v) => setState(() => location = v),
+                      ),
+                    ),
+                    settingTile(
+                      icon: Icons.dark_mode,
+                      title: "Dark Mode",
+                      subtitle: "Switch theme",
+                      trailing: Switch(
+                        value: themeProvider.isDarkMode,
+                        onChanged: (v) => themeProvider.toggleTheme(v),
+                      ),
+                    ),
+                    settingTile(
+                      icon: Icons.language,
+                      title: "Language",
+                      subtitle: "English",
+                      trailing: const Icon(Icons.chevron_right),
+                    ),
+                  ],
                 ),
+              ),
 
-                settingTile(
-                  icon: Icons.dark_mode,
-                  title: "Dark Mode",
-                  subtitle: "Switch theme",
-                  trailing: Switch(
-                    value: darkMode,
-                    onChanged: (v) => setState(() => darkMode = v),
-                  ),
+              /// SECURITY
+              const Padding(
+                padding: EdgeInsets.all(16),
+                child: Text("SECURITY", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+              ),
+
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))
+                    ]
                 ),
-
-                settingTile(
-                  icon: Icons.language,
-                  title: "Language",
-                  subtitle: "English",
-                  trailing: const Icon(Icons.chevron_right),
+                child: Column(
+                  children: [
+                    settingTile(
+                      icon: Icons.lock,
+                      title: "Change Password",
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const ChangePasswordPage()),
+                        );
+                      },
+                    ),
+                    const Divider(height: 1),
+                    settingTile(
+                      icon: Icons.privacy_tip,
+                      title: "Privacy Policy",
+                      onTap: () {
+                        // Navigate to Privacy Policy or show dialog
+                      },
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
+              ),
 
-          /// SECURITY
-          const Padding(
-            padding: EdgeInsets.all(16),
-            child: Text("SECURITY",
-                style: TextStyle(color: Colors.grey)),
-          ),
+              /// SUPPORT
+              const Padding(
+                padding: EdgeInsets.all(16),
+                child: Text("SUPPORT", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+              ),
 
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(14)),
-            child: Column(
-              children: const [
-                ListTile(
-                  leading: Icon(Icons.lock),
-                  title: Text("Change Password"),
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))
+                    ]
                 ),
-                Divider(height: 1),
-                ListTile(
-                  leading: Icon(Icons.privacy_tip),
-                  title: Text("Privacy Policy"),
+                child: settingTile(
+                  icon: Icons.help_outline,
+                  title: "Help & Support",
+                  onTap: () {
+                    // Navigate to Help & Support
+                  },
                 ),
-              ],
-            ),
+              ),
+
+              const SizedBox(height: 30),
+              const Center(child: Text("Version 1.0.0", style: TextStyle(color: Colors.grey))),
+              const SizedBox(height: 30),
+            ],
           ),
-
-          /// SUPPORT
-          const Padding(
-            padding: EdgeInsets.all(16),
-            child: Text("SUPPORT",
-                style: TextStyle(color: Colors.grey)),
-          ),
-
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(14)),
-            child: const ListTile(
-              leading: Icon(Icons.help_outline),
-              title: Text("Help & Support"),
-            ),
-          ),
-
-          const SizedBox(height: 20),
-
-          const Center(child: Text("Version 1.0.0")),
-        ],
-      ),
+        );
+      }
     );
   }
 }

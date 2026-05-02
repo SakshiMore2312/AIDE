@@ -7,50 +7,62 @@ logger = logging.getLogger(__name__)
 
 from fastapi.middleware.cors import CORSMiddleware
 
+from contextlib import asynccontextmanager
+from app.core.config import settings
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Initialize Redis for caching and rate limiting on startup
+    # try:
+    #     from fastapi_cache import FastAPICache
+    #     from fastapi_cache.backends.redis import RedisBackend
+    #     from fastapi_limiter import FastAPILimiter
+    #     from app.core.redis import get_redis_client
+    #     
+    #     # Use the unified redis client helper
+    #     redis_client = get_redis_client()
+    #     
+    #     # Initialize Cache
+    #     FastAPICache.init(RedisBackend(redis_client), prefix="fastapi-cache")
+    #     logger.info("FastAPI Cache initialized successfully")
+    #     
+    #     # Initialize Rate Limiter
+    #     try:
+    #         await FastAPILimiter.init(redis_client)
+    #         logger.info("FastAPI Limiter initialized successfully")
+    #     except Exception as limiter_e:
+    #         FastAPILimiter.redis = None
+    #         FastAPILimiter.lua_sha = None
+    #         logger.error(f"Failed to initialize FastAPI Limiter: {limiter_e}")
+    #         
+    # except Exception as e:
+    #     logger.error(f"Critical error during Redis services initialization: {e}")
+
+    try:
+        from app.core.database import Base, engine
+        Base.metadata.create_all(bind=engine)
+        logger.info("Database tables created successfully")
+    except Exception as e:
+        logger.error(f"Could not create database tables on startup: {e}")
+    
+    yield
+    # Shutdown logic (closing redis etc) could go here if needed
+
 app = FastAPI(
     title="aide API",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
-
-from app.core.config import settings
 
 # Enable CORS using whitelist from settings
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-
-
-@app.on_event("startup")
-async def on_startup():
-    # Initialize Redis for caching
-    try:
-        from redis import asyncio as aioredis
-        from fastapi_cache import FastAPICache
-        from fastapi_cache.backends.redis import RedisBackend
-        
-        redis_client = aioredis.from_url(settings.REDIS_URL, encoding="utf8", decode_responses=True)
-        FastAPICache.init(RedisBackend(redis_client), prefix="fastapi-cache")
-        logger.info("Redis cache initialized successfully")
-        # Initialize Rate Limiter
-        from fastapi_limiter import FastAPILimiter
-        import redis.asyncio as aioredis
-        
-        limiter_redis = aioredis.from_url(settings.REDIS_URL, encoding="utf-8", decode_responses=True)
-        await FastAPILimiter.init(limiter_redis)
-        logger.info("FastAPI Limiter initialized successfully")
-    except Exception as e:
-        logger.warning(f"Could not initialize Redis services: {e}")
-
-    try:
-        Base.metadata.create_all(bind=engine)
-        logger.info("Database tables created successfully")
-    except Exception as e:
-        logger.warning("Could not create database tables on startup: %s", e)
 
 
 # Include API v1

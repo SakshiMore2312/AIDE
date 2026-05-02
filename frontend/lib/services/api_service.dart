@@ -8,9 +8,31 @@ import '../models/pg.dart';
 class ApiService {
   static const String baseUrl = 'http://localhost:8000/api/v1';
 
+  // Helper to get headers with token
+  Future<Map<String, String>> _getHeaders() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('access_token');
+    return {
+      'Content-Type': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    };
+  }
+
   // --- Education Module ---
-  Future<List<College>> getColleges() async {
-    final response = await http.get(Uri.parse('$baseUrl/education/colleges'));
+  Future<List<College>> getColleges({String? query, double? lat, double? lon, double? radius, String? sortBy, String? order, String? minRating}) async {
+    final headers = await _getHeaders();
+    String queryStr = '?';
+    if (query != null) queryStr += 'query=$query&';
+    if (lat != null) queryStr += 'lat=$lat&';
+    if (lon != null) queryStr += 'lon=$lon&';
+    if (radius != null) queryStr += 'radius=$radius&';
+    if (sortBy != null) queryStr += 'sort_by=$sortBy&';
+    if (order != null) queryStr += 'order=$order&';
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/education/colleges/$queryStr'),
+      headers: headers,
+    );
 
     if (response.statusCode == 200) {
       List<dynamic> body = json.decode(response.body);
@@ -21,8 +43,22 @@ class ApiService {
   }
 
   // --- Medical Module ---
-  Future<List<Hospital>> getHospitals() async {
-    final response = await http.get(Uri.parse('$baseUrl/medical/hospitals'));
+  Future<List<Hospital>> getHospitals({String? query, double? lat, double? lon, double? radius, bool? bloodBank, bool? ambulance, String? sortBy, String? order, String? minRating}) async {
+    final headers = await _getHeaders();
+    String queryStr = '?';
+    if (query != null) queryStr += 'query=$query&';
+    if (lat != null) queryStr += 'lat=$lat&';
+    if (lon != null) queryStr += 'lon=$lon&';
+    if (radius != null) queryStr += 'radius=$radius&';
+    if (bloodBank != null && bloodBank) queryStr += 'blood_bank_available=true&';
+    if (ambulance != null && ambulance) queryStr += 'ambulance_available=true&';
+    if (sortBy != null) queryStr += 'sort_by=$sortBy&';
+    if (order != null) queryStr += 'order=$order&';
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/medical/hospitals/$queryStr'),
+      headers: headers,
+    );
 
     if (response.statusCode == 200) {
       List<dynamic> body = json.decode(response.body);
@@ -33,8 +69,20 @@ class ApiService {
   }
 
   // --- Stay Module ---
-  Future<List<PG>> getPGs() async {
-    final response = await http.get(Uri.parse('$baseUrl/stay/pg'));
+  Future<List<PG>> getPGs({String? query, double? lat, double? lon, double? radius, String? sortBy, String? order, String? minRating}) async {
+    final headers = await _getHeaders();
+    String queryStr = '?';
+    if (query != null) queryStr += 'query=$query&';
+    if (lat != null) queryStr += 'lat=$lat&';
+    if (lon != null) queryStr += 'lon=$lon&';
+    if (radius != null) queryStr += 'radius=$radius&';
+    if (sortBy != null) queryStr += 'sort_by=$sortBy&';
+    if (order != null) queryStr += 'order=$order&';
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/stay/pgs/$queryStr'),
+      headers: headers,
+    );
 
     if (response.statusCode == 200) {
       List<dynamic> body = json.decode(response.body);
@@ -72,7 +120,7 @@ class ApiService {
     if (token == null) throw Exception('Not authenticated');
 
     final response = await http.get(
-      Uri.parse('$baseUrl/profile/'),
+      Uri.parse('$baseUrl/profile/me'),
       headers: {'Authorization': 'Bearer $token'},
     );
 
@@ -80,6 +128,23 @@ class ApiService {
       return json.decode(response.body);
     } else {
       throw Exception('Failed to load profile');
+    }
+  }
+
+  Future<void> changePassword(String currentPassword, String newPassword) async {
+    final headers = await _getHeaders();
+    final response = await http.post(
+      Uri.parse('$baseUrl/auth/change-password'),
+      headers: headers,
+      body: json.encode({
+        'current_password': currentPassword,
+        'new_password': newPassword,
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      final error = json.decode(response.body);
+      throw Exception(error['detail'] ?? 'Failed to change password');
     }
   }
 }

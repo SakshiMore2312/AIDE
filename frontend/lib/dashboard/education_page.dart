@@ -1,6 +1,7 @@
 import 'package:educonnect/dashboard/subpage/EducationDetailsPage.dart';
 import 'package:educonnect/models/college.dart';
 import 'package:educonnect/services/api_service.dart';
+import 'package:educonnect/dashboard/widgets/filter_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 
 class EducationPage extends StatefulWidget {
@@ -13,11 +14,30 @@ class EducationPage extends StatefulWidget {
 class _EducationPageState extends State<EducationPage> {
   final ApiService _apiService = ApiService();
   late Future<List<College>> _collegesFuture;
+  String _searchQuery = "";
+  String _sortBy = "name";
+  String _order = "asc";
+  String _minRating = "any";
+  double _radius = 50.0;
 
   @override
   void initState() {
     super.initState();
-    _collegesFuture = _apiService.getColleges();
+    _fetchColleges();
+  }
+
+  void _fetchColleges() {
+    setState(() {
+      _collegesFuture = _apiService.getColleges(
+        query: _searchQuery.isNotEmpty ? _searchQuery : null,
+        lat: 18.52, // Mock Pune Lat
+        lon: 73.85, // Mock Pune Lon
+        radius: _radius,
+        sortBy: _sortBy,
+        order: _order,
+        minRating: _minRating,
+      );
+    });
   }
 
   Widget institutionCard({
@@ -48,7 +68,7 @@ class _EducationPageState extends State<EducationPage> {
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(16),
           boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 8)],
         ),
@@ -140,19 +160,65 @@ class _EducationPageState extends State<EducationPage> {
       child: Column(
         children: [
           /// SEARCH
-          TextField(
-            decoration: InputDecoration(
-              hintText: "Search institutions...",
-              prefixIcon: const Icon(Icons.search),
-              filled: true,
-              fillColor: Colors.white,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(30),
-                borderSide: BorderSide.none,
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  onChanged: (val) {
+                    _searchQuery = val;
+                    _fetchColleges();
+                  },
+                  decoration: InputDecoration(
+                    hintText: "Search institutions...",
+                    prefixIcon: const Icon(Icons.search),
+                    filled: true,
+                    fillColor: Theme.of(context).cardColor,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(30),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
               ),
-            ),
+              const SizedBox(width: 10),
+              GestureDetector(
+                onTap: () {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (context) => FilterBottomSheet(
+                      initialRadius: _radius,
+                      initialSortBy: _sortBy,
+                      initialOrder: _order,
+                      initialMinRating: _minRating,
+                      onApply: (r, s, o, m) {
+                        setState(() {
+                          _radius = r;
+                          _sortBy = s;
+                          _order = o;
+                          _minRating = m;
+                        });
+                        _fetchColleges();
+                      },
+                    ),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: const [
+                      BoxShadow(color: Colors.black12, blurRadius: 6),
+                    ],
+                  ),
+                  child: const Icon(Icons.tune),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 15),
 
           Expanded(
             child: FutureBuilder<List<College>>(

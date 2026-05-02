@@ -42,6 +42,10 @@ def init_db():
 
         if admin:
             print(" Admin user already exists")
+            if not admin.is_verified:
+                admin.is_verified = True
+                db.commit()
+                print("   Admin verified successfully!")
             print(f"   Email: {admin.email}")
             return
 
@@ -51,7 +55,8 @@ def init_db():
             email=ADMIN_EMAIL,
             hashed_password=get_password_hash(ADMIN_PASSWORD),
             role=UserRole.ADMIN,
-            is_active=True
+            is_active=True,
+            is_verified=True
         )
 
         db.add(new_admin)

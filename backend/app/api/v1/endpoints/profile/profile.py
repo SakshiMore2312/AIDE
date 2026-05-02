@@ -9,7 +9,7 @@ from app.core.logger import logger
 from app.models.user import User
 from app.schemas.user import UserResponse, UserSelfUpdate
 
-router = APIRouter(prefix="/profile", tags=["Profile"])
+router = APIRouter(tags=["Profile"])
 
 
 @router.get("/me", response_model=UserResponse)

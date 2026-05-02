@@ -40,7 +40,7 @@ from typing import List, Optional
 from pydantic import Field
 from sqlalchemy import func, or_
 from app.core.location import calculate_haversine_distance
-from app.core.redis import geo_search_nearby, redis_client
+from app.core.redis import geo_search_nearby, get_redis_client
 import json
 import hashlib
 
@@ -89,8 +89,9 @@ async def get_pgs(
     """
     # 1. Cache lookup
     cache_key = filters.get_cache_key()
+    redis = get_redis_client()
     try:
-        cached = await redis_client.get(cache_key)
+        cached = await redis.get(cache_key)
         if cached:
             return json.loads(cached)
     except Exception as e:
@@ -154,8 +155,9 @@ async def get_pgs(
     
     from fastapi.encoders import jsonable_encoder
     json_data = jsonable_encoder(final_results)
+    redis = get_redis_client()
     try:
-        await redis_client.setex(cache_key, 300, json.dumps(json_data))
+        await redis.setex(cache_key, 300, json.dumps(json_data))
     except Exception as e:
         logger.error(f"Cache failed: {e}")
 

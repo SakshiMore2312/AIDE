@@ -1,6 +1,7 @@
 import 'package:educonnect/models/hospital.dart';
 import 'package:educonnect/services/api_service.dart';
 import 'package:flutter/material.dart';
+import 'widgets/filter_bottom_sheet.dart';
 
 class MedicalPage extends StatefulWidget {
   const MedicalPage({super.key});
@@ -12,17 +13,39 @@ class MedicalPage extends StatefulWidget {
 class _MedicalPageState extends State<MedicalPage> {
   final ApiService _apiService = ApiService();
   late Future<List<Hospital>> _hospitalsFuture;
+  String _searchQuery = "";
+  bool _bloodBank = false;
+  bool _ambulance = false;
+  String _sortBy = "name";
+  String _order = "asc";
+  String _minRating = "any";
+  double _radius = 50.0;
 
   @override
   void initState() {
     super.initState();
-    _hospitalsFuture = _apiService.getHospitals();
+    _fetchHospitals();
+  }
+
+  void _fetchHospitals() {
+    setState(() {
+      _hospitalsFuture = _apiService.getHospitals(
+        query: _searchQuery.isNotEmpty ? _searchQuery : null,
+        lat: 18.52, // Mock Pune Lat
+        lon: 73.85, // Mock Pune Lon
+        radius: _radius,
+        bloodBank: _bloodBank,
+        ambulance: _ambulance,
+        sortBy: _sortBy,
+        order: _order,
+        minRating: _minRating,
+      );
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F6FA),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -56,27 +79,72 @@ class _MedicalPageState extends State<MedicalPage> {
               const SizedBox(height: 20),
 
               /// 🔹 Search Bar
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 6,
+              Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).cardColor,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Colors.black12,
+                            blurRadius: 6,
+                          ),
+                        ],
+                      ),
+                      child: TextField(
+                        onChanged: (val) {
+                          _searchQuery = val;
+                          _fetchHospitals();
+                        },
+                        decoration: const InputDecoration(
+                          icon: Icon(Icons.search),
+                          hintText: "Search hospitals...",
+                          border: InputBorder.none,
+                        ),
+                      ),
                     ),
-                  ],
-                ),
-                child: const TextField(
-                  decoration: InputDecoration(
-                    icon: Icon(Icons.search),
-                    hintText: "Search hospitals...",
-                    border: InputBorder.none,
                   ),
-                ),
+                  const SizedBox(width: 10),
+                  GestureDetector(
+                    onTap: () {
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (context) => FilterBottomSheet(
+                          initialRadius: _radius,
+                          initialSortBy: _sortBy,
+                          initialOrder: _order,
+                          initialMinRating: _minRating,
+                          onApply: (r, s, o, m) {
+                            setState(() {
+                              _radius = r;
+                              _sortBy = s;
+                              _order = o;
+                              _minRating = m;
+                            });
+                            _fetchHospitals();
+                          },
+                        ),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).cardColor,
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: const [
+                          BoxShadow(color: Colors.black12, blurRadius: 6),
+                        ],
+                      ),
+                      child: const Icon(Icons.tune),
+                    ),
+                  ),
+                ],
               ),
-
               const SizedBox(height: 20),
 
               /// 🔹 Blood Bank & Ambulance Buttons
@@ -86,16 +154,25 @@ class _MedicalPageState extends State<MedicalPage> {
                     icon: Icons.bloodtype_outlined,
                     label: "Blood Bank",
                     borderColor: Colors.red,
+                    isSelected: _bloodBank,
+                    onTap: () {
+                      _bloodBank = !_bloodBank;
+                      _fetchHospitals();
+                    },
                   ),
                   const SizedBox(width: 12),
                   _medicalChip(
                     icon: Icons.local_hospital_outlined,
                     label: "Ambulance",
                     borderColor: Colors.blue,
+                    isSelected: _ambulance,
+                    onTap: () {
+                      _ambulance = !_ambulance;
+                      _fetchHospitals();
+                    },
                   ),
                 ],
               ),
-
               const SizedBox(height: 25),
 
               /// 🔹 Hospitals Found
@@ -141,21 +218,33 @@ class _MedicalPageState extends State<MedicalPage> {
     required IconData icon,
     required String label,
     required Color borderColor,
+    required bool isSelected,
+    required VoidCallback onTap,
   }) {
     return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          border: Border.all(color: borderColor),
-          borderRadius: BorderRadius.circular(30),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 18),
-            const SizedBox(width: 8),
-            Text(label),
-          ],
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected ? borderColor.withOpacity(0.1) : Colors.transparent,
+            border: Border.all(color: isSelected ? borderColor : Colors.grey.shade300),
+            borderRadius: BorderRadius.circular(30),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 18, color: isSelected ? borderColor : Colors.grey),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isSelected ? borderColor : Colors.grey.shade700,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -166,7 +255,7 @@ class _MedicalPageState extends State<MedicalPage> {
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(20),
         boxShadow: const [
           BoxShadow(
@@ -210,7 +299,7 @@ class _MedicalPageState extends State<MedicalPage> {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).cardColor,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
