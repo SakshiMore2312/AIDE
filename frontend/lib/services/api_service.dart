@@ -87,6 +87,75 @@ class ApiService {
     }
   }
 
+  Future<List<College>> getSchools({String? query, double? lat, double? lon, double? radius, String? sortBy, String? order}) async {
+    final headers = await _getHeaders();
+    String queryStr = '?';
+    if (query != null) queryStr += 'query=$query&';
+    if (lat != null) queryStr += 'lat=$lat&';
+    if (lon != null) queryStr += 'lon=$lon&';
+    if (radius != null) queryStr += 'radius=$radius&';
+    if (sortBy != null) queryStr += 'sort_by=$sortBy&';
+    if (order != null) queryStr += 'order=$order&';
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/education/schools/$queryStr'),
+      headers: headers,
+    );
+
+    if (response.statusCode == 200) {
+      List<dynamic> body = json.decode(response.body);
+      return body.map((item) => College.fromJson(item)).toList();
+    } else {
+      throw Exception('Failed to load schools');
+    }
+  }
+
+  Future<List<College>> getMess({String? query, double? lat, double? lon, double? radius, String? sortBy, String? order}) async {
+    final headers = await _getHeaders();
+    String queryStr = '?';
+    if (query != null) queryStr += 'query=$query&';
+    if (lat != null) queryStr += 'lat=$lat&';
+    if (lon != null) queryStr += 'lon=$lon&';
+    if (radius != null) queryStr += 'radius=$radius&';
+    if (sortBy != null) queryStr += 'sort_by=$sortBy&';
+    if (order != null) queryStr += 'order=$order&';
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/education/mess/$queryStr'),
+      headers: headers,
+    );
+
+    if (response.statusCode == 200) {
+      List<dynamic> body = json.decode(response.body);
+      return body.map((item) => College.fromJson(item)).toList();
+    } else {
+      throw Exception('Failed to load mess');
+    }
+  }
+
+  Future<List<College>> getCoaching({String? query, double? lat, double? lon, double? radius, String? sortBy, String? order}) async {
+    final headers = await _getHeaders();
+    String queryStr = '?';
+    if (query != null) queryStr += 'query=$query&';
+    if (lat != null) queryStr += 'lat=$lat&';
+    if (lon != null) queryStr += 'lon=$lon&';
+    if (radius != null) queryStr += 'radius=$radius&';
+    if (sortBy != null) queryStr += 'sort_by=$sortBy&';
+    if (order != null) queryStr += 'order=$order&';
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/education/coaching/$queryStr'),
+      headers: headers,
+    );
+
+    if (response.statusCode == 200) {
+      List<dynamic> body = json.decode(response.body);
+      return body.map((item) => College.fromJson(item)).toList();
+    } else {
+      throw Exception('Failed to load coaching');
+    }
+  }
+
   // --- Medical Module ---
   Future<Map<String, dynamic>> getHospital(int id) async {
     final headers = await _getHeaders();
@@ -196,6 +265,45 @@ class ApiService {
     }
   }
 
+  Future<List<PG>> getHostels({String? query, double? lat, double? lon, double? radius, String? gender, String? sortBy, String? order, String? minRating}) async {
+    final headers = await _getHeaders();
+    String queryStr = '?';
+    if (query != null) queryStr += 'query=$query&';
+    if (lat != null) queryStr += 'lat=$lat&';
+    if (lon != null) queryStr += 'lon=$lon&';
+    if (radius != null) queryStr += 'radius=$radius&';
+    if (gender != null) queryStr += 'gender=$gender&';
+    if (sortBy != null) queryStr += 'sort_by=$sortBy&';
+    if (order != null) queryStr += 'order=$order&';
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/stay/hostels/$queryStr'),
+      headers: headers,
+    );
+
+    if (response.statusCode == 200) {
+      List<dynamic> body = json.decode(response.body);
+      // Hostels use the same PG model for now as they are structurally similar
+      return body.map((item) => PG.fromJson(item)).toList();
+    } else {
+      throw Exception('Failed to load Hostels');
+    }
+  }
+
+  Future<Map<String, dynamic>> getHostelDetails(int id) async {
+    final headers = await _getHeaders();
+    final response = await http.get(
+      Uri.parse('$baseUrl/stay/hostels/$id'),
+      headers: headers,
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to load Hostel details');
+    }
+  }
+
   Future<List<dynamic>> getPGReviews(int pgId) async {
     final headers = await _getHeaders();
     final response = await http.get(
@@ -223,6 +331,56 @@ class ApiService {
 
     if (response.statusCode != 201) {
       throw Exception('Failed to post review');
+    }
+  }
+
+  Future<List<dynamic>> getHostelReviews(int hostelId) async {
+    final headers = await _getHeaders();
+    final response = await http.get(
+      Uri.parse('$baseUrl/stay/hostels/$hostelId/reviews'),
+      headers: headers,
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to load hostel reviews');
+    }
+  }
+
+  Future<void> postHostelReview(int hostelId, double rating, String content) async {
+    final headers = await _getHeaders();
+    final response = await http.post(
+      Uri.parse('$baseUrl/stay/hostels/$hostelId/reviews'),
+      headers: headers,
+      body: json.encode({
+        'rating': rating,
+        'content': content,
+      }),
+    );
+
+    if (response.statusCode != 201) {
+      throw Exception('Failed to post hostel review');
+    }
+  }
+
+
+
+  // --- Auth Module ---
+  Future<void> register(String fullName, String email, String password) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/auth/register'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
+        'full_name': fullName,
+        'email': email,
+        'password': password,
+      }),
+    );
+
+    if (response.statusCode != 201) {
+      final error = json.decode(response.body);
+      throw Exception(error['detail'] ?? 'Registration failed');
     }
   }
 

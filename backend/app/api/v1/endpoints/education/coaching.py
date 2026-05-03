@@ -13,7 +13,7 @@ from app.schemas.education.coaching import (
     CoachingUpdate,
     CoachingResponse
 )
-from app.api.v1.endpoints.deps import get_current_user, require_roles
+from app.api.v1.endpoints.deps import get_current_user, get_current_user_optional, require_roles
 from fastapi.encoders import jsonable_encoder
 from enum import Enum
 from fastapi_cache.decorator import cache
@@ -70,7 +70,7 @@ class CoachingFilterParams:
 async def get_coaching_classes(
     filters: CoachingFilterParams = Depends(),
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user = Depends(get_current_user_optional)
 ):
     """
     Get coaching classes with advanced dynamic filtering, caching, and geo-proximity sorting.
@@ -105,15 +105,27 @@ async def get_coaching_classes(
     
     if use_geo:
         nearby_results = await geo_search_nearby("geo:coaching", filters.lon, filters.lat, filters.radius)
-        nearby_ids = [res["id"] for res in nearby_results]
-        dist_map = {res["id"]: res["dist"] for res in nearby_results}
-        
-        query = query.filter(Coaching.id.in_(nearby_ids))
-        results = query.all()
-        for coaching, avg_rating in results:
-            coaching.distance = dist_map.get(coaching.id)
-            coaching.rating = float(avg_rating) if avg_rating else 0.0
-            coaching_data_list.append(coaching)
+        if nearby_results is not None:
+            nearby_ids = [res["id"] for res in nearby_results]
+            dist_map = {res["id"]: res["dist"] for res in nearby_results}
+            
+            query = query.filter(Coaching.id.in_(nearby_ids))
+            results = query.all()
+            for coaching, avg_rating in results:
+                coaching.distance = dist_map.get(coaching.id)
+                coaching.rating = float(avg_rating) if avg_rating else 0.0
+                coaching_data_list.append(coaching)
+        else:
+            # Fallback to manual distance calculation
+            results = query.all()
+            for coaching, avg_rating in results:
+                if coaching.latitude and coaching.longitude:
+                    coaching.distance = calculate_haversine_distance(filters.lat, filters.lon, coaching.latitude, coaching.longitude)
+                else:
+                    coaching.distance = float('inf')
+                coaching.rating = float(avg_rating) if avg_rating else 0.0
+                if coaching.distance <= filters.radius:
+                    coaching_data_list.append(coaching)
     else:
         results = query.all()
         for coaching, avg_rating in results:

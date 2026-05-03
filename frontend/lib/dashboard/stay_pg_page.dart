@@ -19,13 +19,60 @@ class _StayPGPageState extends State<StayPGPage> {
   String _sortBy = "distance";
   String _order = "asc";
   String _minRating = "any";
-  double _radius = 10.0;
-  String? _selectedGender; // Changed to match backend filter
+  double _radius = 50.0;
+  String? _selectedGender; 
+  String _selectedCategory = "Stay"; // Default to Stay
 
   @override
   void initState() {
     super.initState();
     _fetchPGs();
+  }
+
+  Widget _categoryCard(BuildContext context, String title, IconData icon, Color color, String typeValue) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    bool isSelected = _selectedCategory == typeValue;
+    return GestureDetector(
+      onTap: () {
+        if (_selectedCategory != typeValue) {
+          setState(() {
+            _selectedCategory = typeValue;
+          });
+          _fetchPGs();
+        }
+      },
+      child: Container(
+        margin: const EdgeInsets.only(right: 12),
+        width: 100,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          color: isSelected 
+              ? color.withOpacity(isDark ? 0.3 : 0.2) 
+              : (isDark ? Colors.grey.shade900 : Colors.grey.shade50),
+          border: Border.all(
+            color: isSelected ? color : color.withOpacity(0.3), 
+            width: 1.5
+          ),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 28),
+            const SizedBox(height: 8),
+            Text(
+              title,
+              style: TextStyle(
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                fontSize: 12,
+                color: isSelected 
+                    ? (isDark ? Colors.white : Colors.black) 
+                    : Colors.grey,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _fetchPGs() async {
@@ -34,16 +81,29 @@ class _StayPGPageState extends State<StayPGPage> {
     final lon = prefs.getDouble('lon');
 
     setState(() {
-      _pgsFuture = _apiService.getPGs(
-        query: _searchQuery.isNotEmpty ? _searchQuery : null,
-        lat: lat,
-        lon: lon,
-        radius: _radius,
-        gender: _selectedGender, // Pass selected gender
-        sortBy: _sortBy,
-        order: _order,
-        minRating: _minRating,
-      );
+      if (_selectedCategory == "PG") {
+        _pgsFuture = _apiService.getPGs(
+          query: _searchQuery.isNotEmpty ? _searchQuery : null,
+          lat: lat,
+          lon: lon,
+          radius: _radius,
+          gender: _selectedGender,
+          sortBy: _sortBy,
+          order: _order,
+          minRating: _minRating,
+        );
+      } else {
+        _pgsFuture = _apiService.getHostels(
+          query: _searchQuery.isNotEmpty ? _searchQuery : null,
+          lat: lat,
+          lon: lon,
+          radius: _radius,
+          gender: _selectedGender,
+          sortBy: _sortBy,
+          order: _order,
+          minRating: _minRating,
+        );
+      }
     });
   }
 
@@ -134,9 +194,9 @@ class _StayPGPageState extends State<StayPGPage> {
                           _searchQuery = val;
                           _fetchPGs();
                         },
-                        decoration: const InputDecoration(
-                          icon: Icon(Icons.search),
-                          hintText: "Search in Stay...",
+                        decoration: InputDecoration(
+                          icon: const Icon(Icons.search),
+                          hintText: "Search in $_selectedCategory...",
                           border: InputBorder.none,
                         ),
                       ),
@@ -202,14 +262,14 @@ class _StayPGPageState extends State<StayPGPage> {
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
-                    _stayChip(context, "Boys", Icons.boy, Colors.blue, "Boys"),
-                    _stayChip(context, "Girls", Icons.girl, Colors.pink, "Girls"),
-                    _stayChip(context, "Co-ed", Icons.people, Colors.orange, "Co-ed"),
-                    _stayChip(context, "All", Icons.all_inclusive, Colors.grey, null),
+                    _categoryCard(context, "Stay", Icons.apartment, Colors.blue, "Stay"),
+                    _categoryCard(context, "PG", Icons.hotel, Colors.orange, "PG"),
                   ],
                 ),
               ),
               const SizedBox(height: 25),
+
+              const SizedBox(height: 10),
 
               FutureBuilder<List<PG>>(
                 future: _pgsFuture,
@@ -252,130 +312,87 @@ class _StayPGPageState extends State<StayPGPage> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => PGDetailsPage(pg: pg),
+            builder: (context) => PGDetailsPage(pg: pg, type: _selectedCategory),
           ),
         );
       },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 20),
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: const [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 4,
-              offset: Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            /// Image
-            ClipRRect(
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(16)),
-              child: Image.network(
-                pg.image ??
-                    "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2",
-                height: 180,
-                width: double.infinity,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  height: 180,
-                  width: double.infinity,
-                  color: Colors.grey.shade200,
-                  child: const Icon(Icons.home, size: 50, color: Colors.grey),
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 16),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.network(
+                  pg.image ?? "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2",
+                  width: 100,
+                  height: 100,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    width: 100,
+                    height: 100,
+                    color: Colors.grey.shade200,
+                    child: const Icon(Icons.home, color: Colors.grey),
+                  ),
                 ),
               ),
-            ),
-
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    pg.name,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      pg.name,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.star_border, color: Colors.orange, size: 16),
-                          const SizedBox(width: 4),
-                          Text(
-                            pg.rating.toString(),
-                            style: const TextStyle(fontWeight: FontWeight.w500),
+                    const SizedBox(height: 4),
+                    Text(
+                      _selectedCategory,
+                      style: TextStyle(color: Colors.blue.shade700, fontSize: 12),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const Icon(Icons.location_on, size: 14, color: Colors.grey),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            pg.address,
+                            style: const TextStyle(fontSize: 12, color: Colors.grey),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ],
-                      ),
-                      Expanded(
-                        child: Text(
-                          "Price: ₹${pg.rent}/mo",
-                          textAlign: TextAlign.right,
-                          style: TextStyle(
-                            color: Colors.blue.shade800,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(Icons.location_on_outlined,
-                          size: 16, color: Colors.grey),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          pg.address,
-                          style: const TextStyle(color: Colors.grey, fontSize: 12),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "₹${pg.rent}/mo",
+                          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Text(
-                        pg.gender,
-                        style: TextStyle(
-                            color: Colors.green.shade700, 
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12
+                        Row(
+                          children: [
+                            const Icon(Icons.star, size: 14, color: Colors.orange),
+                            const SizedBox(width: 4),
+                            Text(
+                              "${pg.rating} ${pg.distance != null ? '(${pg.distance!.toStringAsFixed(1)} km)' : ''}",
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                          ],
                         ),
-                      ),
-                      const SizedBox(width: 10),
-                      Text(
-                        pg.foodIncluded ? "• Food Included" : "",
-                        style: const TextStyle(
-                          color: Colors.grey,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

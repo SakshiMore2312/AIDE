@@ -71,14 +71,16 @@ class Review(Base):
     # Timestamps
     created_at = Column(
         DateTime(timezone=True),
+        default=datetime.utcnow,
         server_default=func.now(),
         nullable=False
     )
 
     updated_at = Column(
         DateTime(timezone=True),
+        default=datetime.utcnow,
         server_default=func.now(),
-        onupdate=func.now(),
+        onupdate=datetime.utcnow,
         nullable=False
     )
 

@@ -19,8 +19,8 @@ class _EducationPageState extends State<EducationPage> {
   String _sortBy = "distance";
   String _order = "asc";
   String _minRating = "any";
-  String? _selectedType; // Added for category filtering
-  double _radius = 10.0;
+  String _selectedType = "Colleges"; // Set default to Colleges
+  double _radius = 50.0;
 
   @override
   void initState() {
@@ -34,32 +34,57 @@ class _EducationPageState extends State<EducationPage> {
     final lon = prefs.getDouble('lon');
 
     setState(() {
-      _collegesFuture = _apiService.getColleges(
-        query: _searchQuery.isNotEmpty ? _searchQuery : null,
-        lat: lat, // Use actual lat or null
-        lon: lon, // Use actual lon or null
-        radius: _radius,
-        type: _selectedType, // Pass selected type
-        sortBy: _sortBy,
-        order: _order,
-        minRating: _minRating,
-      );
+      if (_selectedType == "Colleges") {
+        _collegesFuture = _apiService.getColleges(
+          query: _searchQuery.isNotEmpty ? _searchQuery : null,
+          lat: lat,
+          lon: lon,
+          radius: _radius,
+          sortBy: _sortBy,
+          order: _order,
+        );
+      } else if (_selectedType == "Coaching") {
+        _collegesFuture = _apiService.getCoaching(
+          query: _searchQuery.isNotEmpty ? _searchQuery : null,
+          lat: lat,
+          lon: lon,
+          radius: _radius,
+          sortBy: _sortBy,
+          order: _order,
+        );
+      } else if (_selectedType == "Mess") {
+        _collegesFuture = _apiService.getMess(
+          query: _searchQuery.isNotEmpty ? _searchQuery : null,
+          lat: lat,
+          lon: lon,
+          radius: _radius,
+          sortBy: _sortBy,
+          order: _order,
+        );
+      } else {
+        _collegesFuture = _apiService.getSchools(
+          query: _searchQuery.isNotEmpty ? _searchQuery : null,
+          lat: lat,
+          lon: lon,
+          radius: _radius,
+          sortBy: _sortBy,
+          order: _order,
+        );
+      }
     });
   }
 
-  Widget _categoryCard(BuildContext context, String title, IconData icon, Color color, String? categoryValue) {
+  Widget _categoryCard(BuildContext context, String title, IconData icon, Color color, String categoryValue) {
     final isSelected = _selectedType == categoryValue;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return GestureDetector(
       onTap: () {
-        setState(() {
-          if (_selectedType == categoryValue) {
-            _selectedType = null; // Deselect if already selected
-          } else {
+        if (_selectedType != categoryValue) {
+          setState(() {
             _selectedType = categoryValue;
-          }
-        });
-        _fetchColleges();
+          });
+          _fetchColleges();
+        }
       },
       child: Container(
       margin: const EdgeInsets.only(right: 12),
@@ -306,10 +331,10 @@ class _EducationPageState extends State<EducationPage> {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                _categoryCard(context, "Colleges", Icons.school, Colors.blue, "Government"),
-                _categoryCard(context, "Private", Icons.business, Colors.green, "Private"),
-                _categoryCard(context, "Autonomous", Icons.menu_book, Colors.orange, "Autonomous"),
+                _categoryCard(context, "Colleges", Icons.school, Colors.blue, "Colleges"),
+                _categoryCard(context, "Coaching", Icons.menu_book, Colors.orange, "Coaching"),
                 _categoryCard(context, "Mess", Icons.restaurant, Colors.red, "Mess"),
+                _categoryCard(context, "Schools", Icons.school_outlined, Colors.green, "Schools"),
               ],
             ),
           ),

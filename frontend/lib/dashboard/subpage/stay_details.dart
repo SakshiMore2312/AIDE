@@ -4,7 +4,8 @@ import 'package:educonnect/services/api_service.dart';
 
 class PGDetailsPage extends StatefulWidget {
   final PG pg;
-  const PGDetailsPage({super.key, required this.pg});
+  final String type; // "Stay" or "PG"
+  const PGDetailsPage({super.key, required this.pg, required this.type});
 
   @override
   State<PGDetailsPage> createState() => _PGDetailsPageState();
@@ -23,7 +24,9 @@ class _PGDetailsPageState extends State<PGDetailsPage> {
 
   void _fetchDetails() async {
     try {
-      final data = await ApiService().getPG(widget.pg.id);
+      final data = widget.type == "PG" 
+          ? await ApiService().getPG(widget.pg.id)
+          : await ApiService().getHostelDetails(widget.pg.id);
       if (mounted) {
         setState(() {
           pgDetails = data;
@@ -89,11 +92,19 @@ class _PGDetailsPageState extends State<PGDetailsPage> {
                   onPressed: () async {
                     if (contentController.text.trim().isEmpty) return;
                     try {
-                      await ApiService().postPGReview(
-                        widget.pg.id,
-                        selectedRating,
-                        contentController.text.trim(),
-                      );
+                      if (widget.type == "PG") {
+                        await ApiService().postPGReview(
+                          widget.pg.id,
+                          selectedRating,
+                          contentController.text.trim(),
+                        );
+                      } else {
+                        await ApiService().postHostelReview(
+                          widget.pg.id,
+                          selectedRating,
+                          contentController.text.trim(),
+                        );
+                      }
                       if (mounted) {
                         Navigator.pop(context);
                         setState(() {
@@ -262,7 +273,7 @@ class _PGDetailsPageState extends State<PGDetailsPage> {
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           iconTheme: IconThemeData(color: isDark ? Colors.white : Colors.black),
           title: Text(
-            "PG Details",
+            "${widget.type} Details",
             style: TextStyle(color: isDark ? Colors.white : Colors.black),
           ),
         ),
@@ -570,7 +581,9 @@ class _PGDetailsPageState extends State<PGDetailsPage> {
                                       
                                       FutureBuilder<List<dynamic>>(
                                         key: _reviewsKey,
-                                        future: ApiService().getPGReviews(widget.pg.id),
+                                        future: widget.type == "PG" 
+                                            ? ApiService().getPGReviews(widget.pg.id)
+                                            : ApiService().getHostelReviews(widget.pg.id),
                                         builder: (context, snapshot) {
                                           if (snapshot.connectionState == ConnectionState.waiting) {
                                             return const Center(child: CircularProgressIndicator());

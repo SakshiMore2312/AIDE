@@ -26,12 +26,23 @@ class PG {
       id: json['id'],
       name: json['name'],
       address: json['address'] ?? 'No address',
-      rent: json['one_month_rent'] ?? 0,
-      foodIncluded: json['food_included'] ?? false,
+      rent: _parseRent(json['one_month_rent'] ?? json['monthly_rent']),
+      foodIncluded: json['food_included'] ?? json['mess_available'] ?? false,
       gender: json['gender'] ?? 'Any',
       rating: (json['rating'] ?? 0.0).toDouble(),
       distance: json['distance']?.toDouble(),
       image: json['image'],
     );
+  }
+
+  static int _parseRent(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is String) {
+      // Remove ₹ and commas, then extract numbers
+      final cleaned = value.replaceAll(RegExp(r'[^0-9]'), '');
+      return int.tryParse(cleaned) ?? 0;
+    }
+    return 0;
   }
 }

@@ -23,12 +23,12 @@ class College {
     return College(
       id: json['id'],
       name: json['name'],
-      type: json['type'] ?? 'Unknown',
+      type: json['type'] ?? json['meal_types'] ?? 'General',
       address: json['address'] ?? 'No address',
-      fees: json['fees'] ?? 'N/A',
+      fees: json['fees'] ?? json['monthly_charges'] ?? json['fee_structure'] ?? 'N/A',
       rating: (json['rating'] ?? 0.0).toDouble(),
       distance: json['distance']?.toDouble(),
-      image: json['image'], // Placeholder for now
+      image: json['image'],
     );
   }
 }

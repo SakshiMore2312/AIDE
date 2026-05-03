@@ -23,7 +23,7 @@ class EduConnectApp extends StatelessWidget {
             brightness: Brightness.light,
             useMaterial3: true,
             scaffoldBackgroundColor: Colors.grey.shade50,
-            cardTheme: CardTheme(
+            cardTheme: CardThemeData(
               color: Colors.white,
               elevation: 2,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -37,7 +37,7 @@ class EduConnectApp extends StatelessWidget {
             canvasColor: const Color(0xFF1E1E1E),
             dividerColor: Colors.white12,
             useMaterial3: true,
-            cardTheme: CardTheme(
+            cardTheme: CardThemeData(
               color: const Color(0xFF1E1E1E),
               elevation: 4,
               shadowColor: Colors.black.withOpacity(0.4),

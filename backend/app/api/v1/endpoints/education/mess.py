@@ -13,7 +13,7 @@ from app.schemas.education.mess import (
     MessUpdate,
     MessResponse
 )
-from app.api.v1.endpoints.deps import get_current_user, require_roles
+from app.api.v1.endpoints.deps import get_current_user, get_current_user_optional, require_roles
 from fastapi.encoders import jsonable_encoder
 from enum import Enum
 from fastapi_cache.decorator import cache
@@ -70,7 +70,7 @@ class MessFilterParams:
 async def get_mess_list(
     filters: MessFilterParams = Depends(),
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user = Depends(get_current_user_optional)
 ):
     """
     Get mess list with advanced dynamic filtering, caching, and geo-proximity sorting.
@@ -105,15 +105,27 @@ async def get_mess_list(
     
     if use_geo:
         nearby_results = await geo_search_nearby("geo:mess", filters.lon, filters.lat, filters.radius)
-        nearby_ids = [res["id"] for res in nearby_results]
-        dist_map = {res["id"]: res["dist"] for res in nearby_results}
-        
-        query = query.filter(Mess.id.in_(nearby_ids))
-        results = query.all()
-        for mess, avg_rating in results:
-            mess.distance = dist_map.get(mess.id)
-            mess.rating = float(avg_rating) if avg_rating else 0.0
-            mess_data_list.append(mess)
+        if nearby_results is not None:
+            nearby_ids = [res["id"] for res in nearby_results]
+            dist_map = {res["id"]: res["dist"] for res in nearby_results}
+            
+            query = query.filter(Mess.id.in_(nearby_ids))
+            results = query.all()
+            for mess, avg_rating in results:
+                mess.distance = dist_map.get(mess.id)
+                mess.rating = float(avg_rating) if avg_rating else 0.0
+                mess_data_list.append(mess)
+        else:
+            # Fallback
+            results = query.all()
+            for mess, avg_rating in results:
+                if mess.latitude and mess.longitude:
+                    mess.distance = calculate_haversine_distance(filters.lat, filters.lon, mess.latitude, mess.longitude)
+                else:
+                    mess.distance = float('inf')
+                mess.rating = float(avg_rating) if avg_rating else 0.0
+                if mess.distance <= filters.radius:
+                    mess_data_list.append(mess)
     else:
         results = query.all()
         for mess, avg_rating in results:

@@ -13,7 +13,7 @@ from app.schemas.education.schools import (
     SchoolUpdate,
     SchoolResponse
 )
-from app.api.v1.endpoints.deps import get_current_user, require_roles
+from app.api.v1.endpoints.deps import get_current_user, get_current_user_optional, require_roles
 from fastapi.encoders import jsonable_encoder
 from enum import Enum
 from fastapi_cache.decorator import cache
@@ -72,7 +72,7 @@ class SchoolFilterParams:
 async def get_schools(
     filters: SchoolFilterParams = Depends(),
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user = Depends(get_current_user_optional)
 ):
     """
     Get schools with advanced dynamic filtering, caching, and geo-proximity sorting.
@@ -109,15 +109,27 @@ async def get_schools(
     
     if use_geo:
         nearby_results = await geo_search_nearby("geo:schools", filters.lon, filters.lat, filters.radius)
-        nearby_ids = [res["id"] for res in nearby_results]
-        dist_map = {res["id"]: res["dist"] for res in nearby_results}
-        
-        query = query.filter(School.id.in_(nearby_ids))
-        results = query.all()
-        for school, avg_rating in results:
-            school.distance = dist_map.get(school.id)
-            school.rating = float(avg_rating) if avg_rating else 0.0
-            schools_list.append(school)
+        if nearby_results is not None:
+            nearby_ids = [res["id"] for res in nearby_results]
+            dist_map = {res["id"]: res["dist"] for res in nearby_results}
+            
+            query = query.filter(School.id.in_(nearby_ids))
+            results = query.all()
+            for school, avg_rating in results:
+                school.distance = dist_map.get(school.id)
+                school.rating = float(avg_rating) if avg_rating else 0.0
+                schools_list.append(school)
+        else:
+            # Fallback
+            results = query.all()
+            for school, avg_rating in results:
+                if school.latitude and school.longitude:
+                    school.distance = calculate_haversine_distance(filters.lat, filters.lon, school.latitude, school.longitude)
+                else:
+                    school.distance = float('inf')
+                school.rating = float(avg_rating) if avg_rating else 0.0
+                if school.distance <= filters.radius:
+                    schools_list.append(school)
     else:
         results = query.all()
         for school, avg_rating in results:
