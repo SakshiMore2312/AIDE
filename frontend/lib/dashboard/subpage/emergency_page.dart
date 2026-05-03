@@ -28,12 +28,12 @@ class EmergencyPage extends StatelessWidget {
     );
   }
 
-  Widget contactCard(String name, String relation, String phone) {
+  Widget contactCard(String name, String relation, String phone, BuildContext context) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
@@ -66,7 +66,7 @@ class EmergencyPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text("Emergency Contacts"),
         actions: [
@@ -93,8 +93,8 @@ class EmergencyPage extends StatelessWidget {
             child: Text("Personal Contacts"),
           ),
 
-          contactCard("Priya Sharma", "Mother", "+91 9876543230"),
-          contactCard("Amit Sharma", "Father", "+91 9876543231"),
+          contactCard("Priya Sharma", "Mother", "+91 9876543230", context),
+          contactCard("Amit Sharma", "Father", "+91 9876543231", context),
         ],
       ),
     );

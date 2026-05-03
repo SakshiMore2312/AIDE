@@ -265,6 +265,38 @@ async def reset_password(request: ResetPasswordRequest, db: Session = Depends(ge
     
     return {"message": "Password reset successfully. You can now log in."}
 
+# REQUEST CHANGE PASSWORD OTP
+@router.post("/request-change-password-otp")
+async def request_change_password_otp(
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Send an OTP to the current user's email for password change verification.
+    """
+    # Generate 6-digit OTP
+    otp_code = "".join([str(secrets.randbelow(10)) for _ in range(6)])
+    
+    # Store in Redis for 10 minutes (using a different prefix for security)
+    await set_otp(f"change_pass:{current_user.email}", otp_code, expire_seconds=600)
+    
+    # Send email
+    subject = "Verification Code for Password Change"
+    body = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+        <h2 style="color: #4CAF50;">Security Verification</h2>
+        <p>You are requesting to change your password. Please use the verification code below to authorize this action:</p>
+        <div style="font-size: 32px; font-weight: bold; letter-spacing: 5px; text-align: center; padding: 20px; background-color: #f4f4f4; color: #333; border-radius: 5px;">
+            {otp_code}
+        </div>
+        <p>This code will expire in 10 minutes. If you did not request this, please change your password immediately or contact support.</p>
+    </div>
+    """
+    from app.services.email import send_email
+    send_email(current_user.email, subject, body, is_html=True)
+    
+    logger.info(f"Password change OTP sent to {current_user.email}")
+    return {"message": "Verification code sent to your email."}
+
 # CHANGE PASSWORD
 @router.post("/change-password")
 async def change_password(
@@ -273,13 +305,23 @@ async def change_password(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Allow authenticated user to change their password by verifying current password.
+    Allow authenticated user to change their password by verifying current password AND OTP.
     """
+    # 1. Verify current password
     if not verify_password(request.current_password, current_user.hashed_password):
         raise UnauthorizedError("Incorrect current password")
     
+    # 2. Verify OTP from Redis
+    stored_otp = await get_otp(f"change_pass:{current_user.email}")
+    if not stored_otp or stored_otp != request.otp_code:
+        raise ValidationError("Invalid or expired verification code")
+    
+    # 3. Update password
     current_user.hashed_password = get_password_hash(request.new_password)
     db.commit()
     
-    logger.info(f"User changed password: {current_user.id}")
+    # 4. Cleanup
+    await delete_otp(f"change_pass:{current_user.email}")
+    
+    logger.info(f"User changed password successfully: {current_user.id}")
     return {"message": "Password changed successfully"}

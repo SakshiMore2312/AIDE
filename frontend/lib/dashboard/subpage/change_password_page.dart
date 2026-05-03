@@ -13,12 +13,20 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
   final TextEditingController _currentPasswordController = TextEditingController();
   final TextEditingController _newPasswordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _otpController = TextEditingController();
   
   final ApiService _apiService = ApiService();
   bool _isLoading = false;
+  bool _isOtpSent = false;
 
   void _handleUpdate() async {
     if (_formKey.currentState!.validate()) {
+      if (_otpController.text.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Please enter the verification code")),
+        );
+        return;
+      }
       if (_newPasswordController.text != _confirmPasswordController.text) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("New passwords do not match")),
@@ -31,6 +39,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
         await _apiService.changePassword(
           _currentPasswordController.text,
           _newPasswordController.text,
+          _otpController.text,
         );
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -45,6 +54,25 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
       } finally {
         if (mounted) setState(() => _isLoading = false);
       }
+    }
+  }
+
+  void _requestOtp() async {
+    setState(() => _isLoading = true);
+    try {
+      await _apiService.requestChangePasswordOtp();
+      if (!mounted) return;
+      setState(() => _isOtpSent = true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Verification code sent to your email")),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: ${e.toString()}")),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -92,16 +120,31 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                 ),
                 validator: (v) => v!.isEmpty ? "Required" : null,
               ),
+              const SizedBox(height: 20),
+              TextFormField(
+                controller: _otpController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: "Verification Code",
+                  border: const OutlineInputBorder(),
+                  suffixIcon: TextButton(
+                    onPressed: _isLoading ? null : _requestOtp,
+                    child: Text(_isOtpSent ? "Resend" : "Send Code"),
+                  ),
+                ),
+                validator: (v) => v!.length != 6 ? "Enter 6 digits" : null,
+              ),
               const SizedBox(height: 40),
               ElevatedButton(
-                onPressed: _isLoading ? null : _handleUpdate,
+                onPressed: _isLoading || !_isOtpSent ? null : _handleUpdate,
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   backgroundColor: Colors.deepPurple,
                   foregroundColor: Colors.white,
+                  disabledBackgroundColor: Colors.grey,
                 ),
                 child: _isLoading 
-                  ? const CircularProgressIndicator(color: Colors.white)
+                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                   : const Text("Update Password"),
               ),
             ],

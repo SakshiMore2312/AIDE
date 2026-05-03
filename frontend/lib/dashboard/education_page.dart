@@ -3,6 +3,7 @@ import 'package:educonnect/models/college.dart';
 import 'package:educonnect/services/api_service.dart';
 import 'package:educonnect/dashboard/widgets/filter_bottom_sheet.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class EducationPage extends StatefulWidget {
   const EducationPage({super.key});
@@ -15,10 +16,11 @@ class _EducationPageState extends State<EducationPage> {
   final ApiService _apiService = ApiService();
   late Future<List<College>> _collegesFuture;
   String _searchQuery = "";
-  String _sortBy = "name";
+  String _sortBy = "distance";
   String _order = "asc";
   String _minRating = "any";
-  double _radius = 50.0;
+  String? _selectedType; // Added for category filtering
+  double _radius = 10.0;
 
   @override
   void initState() {
@@ -26,13 +28,18 @@ class _EducationPageState extends State<EducationPage> {
     _fetchColleges();
   }
 
-  void _fetchColleges() {
+  void _fetchColleges() async {
+    final prefs = await SharedPreferences.getInstance();
+    final lat = prefs.getDouble('lat');
+    final lon = prefs.getDouble('lon');
+
     setState(() {
       _collegesFuture = _apiService.getColleges(
         query: _searchQuery.isNotEmpty ? _searchQuery : null,
-        lat: 18.52, // Mock Pune Lat
-        lon: 73.85, // Mock Pune Lon
+        lat: lat, // Use actual lat or null
+        lon: lon, // Use actual lon or null
         radius: _radius,
+        type: _selectedType, // Pass selected type
         sortBy: _sortBy,
         order: _order,
         minRating: _minRating,
@@ -40,8 +47,57 @@ class _EducationPageState extends State<EducationPage> {
     });
   }
 
+  Widget _categoryCard(BuildContext context, String title, IconData icon, Color color, String? categoryValue) {
+    final isSelected = _selectedType == categoryValue;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          if (_selectedType == categoryValue) {
+            _selectedType = null; // Deselect if already selected
+          } else {
+            _selectedType = categoryValue;
+          }
+        });
+        _fetchColleges();
+      },
+      child: Container(
+      margin: const EdgeInsets.only(right: 12),
+      width: 90,
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      decoration: BoxDecoration(
+        color: isSelected 
+            ? color.withOpacity(isDark ? 0.3 : 0.2) 
+            : (isDark ? Colors.grey.shade900 : Colors.grey.shade50),
+        border: Border.all(
+          color: isSelected ? color : color.withOpacity(0.3), 
+          width: 1.5
+        ),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 28),
+          const SizedBox(height: 8),
+          Text(
+            title,
+            style: TextStyle(
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+              fontSize: 12,
+              color: isSelected 
+                  ? (isDark ? Colors.white : Colors.black) 
+                  : Colors.grey,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
   Widget institutionCard({
     required BuildContext context,
+    required int id,
     required String name,
     required String category,
     required String image,
@@ -55,6 +111,7 @@ class _EducationPageState extends State<EducationPage> {
           context,
           MaterialPageRoute(
             builder: (_) => EducationDetailsPage(
+              id: id,
               name: name,
               category: category,
               image: image,
@@ -70,7 +127,7 @@ class _EducationPageState extends State<EducationPage> {
         decoration: BoxDecoration(
           color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 8)],
+          boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -81,11 +138,11 @@ class _EducationPageState extends State<EducationPage> {
                   const BorderRadius.vertical(top: Radius.circular(16)),
               child: Image.network(
                 image,
-                height: 160,
+                height: 180,
                 width: double.infinity,
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) => Container(
-                  height: 160,
+                  height: 180,
                   width: double.infinity,
                   color: Colors.grey.shade200,
                   child: const Icon(Icons.school, size: 50, color: Colors.grey),
@@ -94,55 +151,63 @@ class _EducationPageState extends State<EducationPage> {
             ),
 
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Text(
+                    name,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.star_border, color: Colors.orange, size: 16),
+                          const SizedBox(width: 4),
+                          Text(
+                            rating.split(' ')[0], // Extract just the number
+                            style: const TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                        ],
+                      ),
                       Expanded(
                         child: Text(
-                          name,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: category == "College"
-                              ? Colors.blue.shade50
-                              : Colors.green.shade50,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          category,
+                          "Price: $fees",
+                          textAlign: TextAlign.right,
                           style: TextStyle(
-                            color: category == "College"
-                                ? Colors.blue
-                                : Colors.green,
+                            color: Colors.blue.shade800,
                             fontWeight: FontWeight.bold,
-                            fontSize: 12,
+                            fontSize: 13,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 6),
-                  Text("⭐ $rating"),
-                  const SizedBox(height: 6),
-                  Text(
-                    location,
-                    style: const TextStyle(color: Colors.grey),
-                  ),
                   const SizedBox(height: 8),
-                  Text(
-                    fees,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.location_on_outlined, color: Colors.grey, size: 16),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          location,
+                          style: const TextStyle(color: Colors.grey, fontSize: 12),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -158,6 +223,7 @@ class _EducationPageState extends State<EducationPage> {
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           /// SEARCH
           Row(
@@ -169,7 +235,7 @@ class _EducationPageState extends State<EducationPage> {
                     _fetchColleges();
                   },
                   decoration: InputDecoration(
-                    hintText: "Search institutions...",
+                    hintText: "Search in Colleges...",
                     prefixIcon: const Icon(Icons.search),
                     filled: true,
                     fillColor: Theme.of(context).cardColor,
@@ -218,6 +284,35 @@ class _EducationPageState extends State<EducationPage> {
               ),
             ],
           ),
+          const SizedBox(height: 12),
+          
+          /// SORTING INDICATOR
+          Row(
+            children: [
+              const Icon(Icons.sort, size: 16, color: Colors.grey),
+              const SizedBox(width: 4),
+              Text(
+                "Sorted by $_sortBy ($_order)",
+                style: const TextStyle(color: Colors.grey, fontSize: 12),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          /// CATEGORIES
+          const Text("Education Categories", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _categoryCard(context, "Colleges", Icons.school, Colors.blue, "Government"),
+                _categoryCard(context, "Private", Icons.business, Colors.green, "Private"),
+                _categoryCard(context, "Autonomous", Icons.menu_book, Colors.orange, "Autonomous"),
+                _categoryCard(context, "Mess", Icons.restaurant, Colors.red, "Mess"),
+              ],
+            ),
+          ),
           const SizedBox(height: 15),
 
           Expanded(
@@ -229,7 +324,7 @@ class _EducationPageState extends State<EducationPage> {
                 } else if (snapshot.hasError) {
                   return Center(child: Text('Error: ${snapshot.error}'));
                 } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return const Center(child: Text('No institutions found'));
+                  return const Center(child: Text('No data available'));
                 }
 
                 final colleges = snapshot.data!;
@@ -239,6 +334,7 @@ class _EducationPageState extends State<EducationPage> {
                     final college = colleges[index];
                     return institutionCard(
                       context: context,
+                      id: college.id,
                       name: college.name,
                       category: college.type,
                       image: college.image ??

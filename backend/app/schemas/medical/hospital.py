@@ -15,6 +15,8 @@ class HospitalBase(BaseModel):
     email: Optional[EmailStr] = None
     website: Optional[HttpUrl] = None
     google_maps_link: Optional[HttpUrl] = None
+    blood_bank_available: bool = False
+    ambulance_available: bool = False
 
 class HospitalCreate(HospitalBase):
     pass

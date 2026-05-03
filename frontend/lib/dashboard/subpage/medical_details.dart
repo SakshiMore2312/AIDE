@@ -1,32 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:educonnect/models/hospital.dart';
 import 'package:educonnect/services/api_service.dart';
 
-class EducationDetailsPage extends StatefulWidget {
-  final int id;
-  final String name;
-  final String category;
-  final String image;
-  final String location;
-  final String fees;
-  final String rating;
+class MedicalDetailsPage extends StatefulWidget {
+  final Hospital hospital;
 
-  const EducationDetailsPage({
-    super.key,
-    required this.id,
-    required this.name,
-    required this.category,
-    required this.image,
-    required this.location,
-    required this.fees,
-    required this.rating,
-  });
+  const MedicalDetailsPage({super.key, required this.hospital});
 
   @override
-  State<EducationDetailsPage> createState() => _EducationDetailsPageState();
+  State<MedicalDetailsPage> createState() => _MedicalDetailsPageState();
 }
 
-class _EducationDetailsPageState extends State<EducationDetailsPage> {
-  Map<String, dynamic>? collegeDetails;
+class _MedicalDetailsPageState extends State<MedicalDetailsPage> {
+  Map<String, dynamic>? hospitalDetails;
   bool isLoadingDetails = true;
   Key _reviewsKey = UniqueKey();
 
@@ -38,10 +24,10 @@ class _EducationDetailsPageState extends State<EducationDetailsPage> {
 
   void _fetchDetails() async {
     try {
-      final data = await ApiService().getCollege(widget.id);
+      final data = await ApiService().getHospital(widget.hospital.id);
       if (mounted) {
         setState(() {
-          collegeDetails = data;
+          hospitalDetails = data;
           isLoadingDetails = false;
         });
       }
@@ -104,15 +90,15 @@ class _EducationDetailsPageState extends State<EducationDetailsPage> {
                   onPressed: () async {
                     if (contentController.text.trim().isEmpty) return;
                     try {
-                      await ApiService().postCollegeReview(
-                        widget.id,
+                      await ApiService().postHospitalReview(
+                        widget.hospital.id,
                         selectedRating,
                         contentController.text.trim(),
                       );
                       if (mounted) {
                         Navigator.pop(context);
                         setState(() {
-                          _reviewsKey = UniqueKey(); // Refresh reviews
+                          _reviewsKey = UniqueKey();
                         });
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text("Review posted successfully!")),
@@ -180,23 +166,23 @@ class _EducationDetailsPageState extends State<EducationDetailsPage> {
       ));
     }
     
-    final phone = collegeDetails?['phone_number'] ?? "Not Available";
-    final website = collegeDetails?['website'] ?? "Not Available";
-    final email = collegeDetails?['email'] ?? "Not Available";
+    final phone = hospitalDetails?['emergency_contact'] ?? "Not Available";
+    final website = hospitalDetails?['website'] ?? "Not Available";
+    final email = hospitalDetails?['email'] ?? "Not Available";
 
     return infoCard(
       context: context,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text("Contact Admissions",
-              style: TextStyle(fontWeight: FontWeight.bold)),
+          const Text("Emergency Contact",
+              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
           const SizedBox(height: 12),
-          Row(children: [const Icon(Icons.phone_outlined, size: 18, color: Colors.deepPurple), const SizedBox(width: 8), Text(phone)]),
+          Row(children: [const Icon(Icons.phone_outlined, size: 18, color: Colors.red), const SizedBox(width: 8), Text(phone, style: const TextStyle(fontWeight: FontWeight.bold))]),
           const SizedBox(height: 8),
-          Row(children: [const Icon(Icons.email_outlined, size: 18, color: Colors.deepPurple), const SizedBox(width: 8), Text(email)]),
+          Row(children: [const Icon(Icons.email_outlined, size: 18, color: Colors.red), const SizedBox(width: 8), Text(email)]),
           const SizedBox(height: 8),
-          Row(children: [const Icon(Icons.language_outlined, size: 18, color: Colors.deepPurple), const SizedBox(width: 8), Text(website)]),
+          Row(children: [const Icon(Icons.language_outlined, size: 18, color: Colors.red), const SizedBox(width: 8), Text(website)]),
         ],
       ),
     );
@@ -210,20 +196,20 @@ class _EducationDetailsPageState extends State<EducationDetailsPage> {
       child: Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
 
-        /// APPLY BUTTON
+        /// BOOK APPOINTMENT BUTTON
         bottomNavigationBar: Padding(
           padding: const EdgeInsets.all(16),
           child: ElevatedButton(
             onPressed: () {},
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.deepPurple,
+              backgroundColor: Colors.red.shade600,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
-            child: const Text("Apply For Admission", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            child: const Text("Book Appointment", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           ),
         ),
 
@@ -233,7 +219,7 @@ class _EducationDetailsPageState extends State<EducationDetailsPage> {
             Stack(
               children: [
                 Image.network(
-                  widget.image,
+                  widget.hospital.image ?? "https://images.unsplash.com/photo-1586773860418-d37222d8fce3",
                   height: 220,
                   width: double.infinity,
                   fit: BoxFit.cover,
@@ -241,7 +227,7 @@ class _EducationDetailsPageState extends State<EducationDetailsPage> {
                     height: 220,
                     width: double.infinity,
                     color: Colors.grey.shade300,
-                    child: const Icon(Icons.school, size: 80, color: Colors.grey),
+                    child: const Icon(Icons.local_hospital, size: 80, color: Colors.grey),
                   ),
                 ),
                 Positioned(
@@ -267,7 +253,7 @@ class _EducationDetailsPageState extends State<EducationDetailsPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(widget.name,
+                        Text(widget.hospital.name,
                             style: const TextStyle(
                                 fontSize: 20, fontWeight: FontWeight.bold)),
                         const SizedBox(height: 6),
@@ -278,13 +264,13 @@ class _EducationDetailsPageState extends State<EducationDetailsPage> {
                               children: [
                                 const Icon(Icons.star, color: Colors.orange, size: 18),
                                 const SizedBox(width: 4),
-                                Text(widget.rating.split(' ')[0]),
+                                Text(widget.hospital.rating.toString()),
                               ],
                             ),
                             Text(
-                              "Price: ${widget.fees}",
+                              "Beds: ${widget.hospital.availableBeds}",
                               style: TextStyle(
-                                color: Colors.deepPurple.shade400,
+                                color: Colors.blue.shade600,
                                 fontWeight: FontWeight.bold,
                               ),
                             )
@@ -296,7 +282,7 @@ class _EducationDetailsPageState extends State<EducationDetailsPage> {
                           children: [
                             const Icon(Icons.location_on_outlined, size: 16, color: Colors.grey),
                             const SizedBox(width: 6),
-                            Expanded(child: Text(widget.location, style: const TextStyle(color: Colors.grey, fontSize: 13))),
+                            Expanded(child: Text(widget.hospital.address, style: const TextStyle(color: Colors.grey, fontSize: 13))),
                           ],
                         ),
                       ],
@@ -305,12 +291,12 @@ class _EducationDetailsPageState extends State<EducationDetailsPage> {
 
                   /// TABS
                   TabBar(
-                    labelColor: isDark ? Colors.white : Colors.deepPurple,
+                    labelColor: isDark ? Colors.white : Colors.red.shade600,
                     unselectedLabelColor: Colors.grey,
-                    indicatorColor: Colors.deepPurple,
+                    indicatorColor: Colors.red.shade600,
                     tabs: const [
                       Tab(text: "Overview"),
-                      Tab(text: "Admission"),
+                      Tab(text: "Facilities"),
                       Tab(text: "Reviews"),
                     ],
                   ),
@@ -329,42 +315,24 @@ class _EducationDetailsPageState extends State<EducationDetailsPage> {
                               infoCard(
                                 context: context,
                                 child: Text(
-                                  collegeDetails?['description'] ?? "No description available.",
+                                  hospitalDetails?['description'] ?? "No description available.",
                                 ),
                               ),
 
-                              sectionTitle("Courses", context),
+                              sectionTitle("Specialties", context),
                               infoCard(
                                 context: context,
                                 child: Column(
                                   children: const [
                                     ListTile(
-                                        leading: Icon(Icons.science_outlined),
-                                        title: Text("Science")),
+                                        leading: Icon(Icons.favorite, color: Colors.red),
+                                        title: Text("Cardiology")),
                                     ListTile(
-                                        leading: Icon(Icons.business_outlined),
-                                        title: Text("Commerce")),
+                                        leading: Icon(Icons.visibility, color: Colors.blue),
+                                        title: Text("Ophthalmology")),
                                     ListTile(
-                                        leading: Icon(Icons.palette_outlined),
-                                        title: Text("Arts")),
-                                  ],
-                                ),
-                              ),
-
-                              sectionTitle("Facilities", context),
-                              infoCard(
-                                context: context,
-                                child: Column(
-                                  children: const [
-                                    ListTile(
-                                        leading: Icon(Icons.menu_book_outlined),
-                                        title: Text("Library")),
-                                    ListTile(
-                                        leading: Icon(Icons.computer_outlined),
-                                        title: Text("Computer Lab")),
-                                    ListTile(
-                                        leading: Icon(Icons.sports_soccer),
-                                        title: Text("Sports Ground")),
+                                        leading: Icon(Icons.child_care, color: Colors.green),
+                                        title: Text("Pediatrics")),
                                   ],
                                 ),
                               ),
@@ -375,20 +343,33 @@ class _EducationDetailsPageState extends State<EducationDetailsPage> {
                           ),
                         ),
 
-                        /// ADMISSION
+                        /// FACILITIES
                         SingleChildScrollView(
                           padding: const EdgeInsets.all(16),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              sectionTitle("Fees", context),
-                              infoCard(context: context, child: Text(widget.fees)),
-
-                              sectionTitle("Process", context),
+                              sectionTitle("Available Services", context),
                               infoCard(
                                 context: context,
-                                child: const Text(
-                                  "1. Apply\n2. Documents\n3. Test\n4. Admission",
+                                child: Column(
+                                  children: [
+                                    ListTile(
+                                        leading: Icon(Icons.bloodtype, color: Colors.red.shade700),
+                                        title: const Text("Blood Bank"),
+                                        trailing: Icon((hospitalDetails?['blood_bank_available'] ?? false) ? Icons.check_circle : Icons.cancel, color: (hospitalDetails?['blood_bank_available'] ?? false) ? Colors.green : Colors.red),
+                                    ),
+                                    ListTile(
+                                        leading: const Icon(Icons.directions_car, color: Colors.orange),
+                                        title: const Text("Ambulance"),
+                                        trailing: Icon((hospitalDetails?['ambulance_available'] ?? false) ? Icons.check_circle : Icons.cancel, color: (hospitalDetails?['ambulance_available'] ?? false) ? Colors.green : Colors.red),
+                                    ),
+                                    const ListTile(
+                                        leading: Icon(Icons.local_pharmacy, color: Colors.blue),
+                                        title: Text("24/7 Pharmacy"),
+                                        trailing: Icon(Icons.check_circle, color: Colors.green),
+                                    ),
+                                  ],
                                 ),
                               ),
 
@@ -409,18 +390,18 @@ class _EducationDetailsPageState extends State<EducationDetailsPage> {
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                                     decoration: BoxDecoration(
-                                      color: Colors.deepPurple.withOpacity(0.1),
+                                      color: Colors.red.withOpacity(0.1),
                                       borderRadius: BorderRadius.circular(20),
                                     ),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
-                                      children: const [
-                                        Icon(Icons.rate_review_outlined, color: Colors.deepPurple, size: 18),
-                                        SizedBox(width: 8),
+                                      children: [
+                                        Icon(Icons.rate_review_outlined, color: Colors.red.shade600, size: 18),
+                                        const SizedBox(width: 8),
                                         Text(
                                           "Write Your Review",
                                           style: TextStyle(
-                                            color: Colors.deepPurple,
+                                            color: Colors.red.shade600,
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),
@@ -433,7 +414,7 @@ class _EducationDetailsPageState extends State<EducationDetailsPage> {
                               
                               FutureBuilder<List<dynamic>>(
                                 key: _reviewsKey,
-                                future: ApiService().getCollegeReviews(widget.id),
+                                future: ApiService().getHospitalReviews(widget.hospital.id),
                                 builder: (context, snapshot) {
                                   if (snapshot.connectionState == ConnectionState.waiting) {
                                     return const Center(child: CircularProgressIndicator());
@@ -455,8 +436,8 @@ class _EducationDetailsPageState extends State<EducationDetailsPage> {
                                       children: reviews.map((r) => ListTile(
                                         contentPadding: EdgeInsets.zero,
                                         leading: CircleAvatar(
-                                          backgroundColor: isDark ? Colors.deepPurple.shade900 : Colors.deepPurple.shade100,
-                                          child: Icon(Icons.person, color: isDark ? Colors.deepPurple.shade100 : Colors.deepPurple),
+                                          backgroundColor: isDark ? Colors.red.shade900 : Colors.red.shade100,
+                                          child: Icon(Icons.person, color: isDark ? Colors.red.shade100 : Colors.red.shade600),
                                         ),
                                         title: Row(
                                           mainAxisAlignment: MainAxisAlignment.spaceBetween,

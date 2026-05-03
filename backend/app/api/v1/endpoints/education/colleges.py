@@ -15,7 +15,7 @@ from app.schemas.education.colleges import (
 )
 from sqlalchemy import func, or_
 from app.models.education.review import Review
-from app.api.v1.endpoints.deps import get_current_user, require_roles
+from app.api.v1.endpoints.deps import get_current_user, get_current_user_optional, require_roles
 
 router = APIRouter(prefix="/colleges", tags=["Colleges"])
 
@@ -74,7 +74,7 @@ class CollegeFilterParams:
 async def get_colleges(
     filters: CollegeFilterParams = Depends(),
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user = Depends(get_current_user_optional)
 ):
     """
     Get a paginated list of colleges with dynamic filtering and sorting.
@@ -87,8 +87,10 @@ async def get_colleges(
     
     # 1. Check Redis Cache
     cache_key = filters.get_cache_key()
+    from app.core.redis import get_redis_client
+    redis = get_redis_client()
     try:
-        cached_data = await redis_client.get(cache_key)
+        cached_data = await redis.get(cache_key)
         if cached_data:
             logger.info(f"Returning cached results for {cache_key}")
             return json.loads(cached_data)
@@ -124,18 +126,30 @@ async def get_colleges(
     if use_geo:
         # Use Redis for high-performance proximity finding
         nearby_results = await geo_search_nearby("geo:colleges", filters.lon, filters.lat, filters.radius)
-        nearby_ids = [res["id"] for res in nearby_results]
-        dist_map = {res["id"]: res["dist"] for res in nearby_results}
-        
-        # Filter DB query to only include nearby colleges
-        query = query.filter(College.id.in_(nearby_ids))
-        
-        # Execute query
-        results = query.all()
-        for college, avg_rating in results:
-            college.distance = dist_map.get(college.id)
-            college.rating = float(avg_rating) if avg_rating else 0.0
-            colleges_list.append(college)
+        if nearby_results is not None:
+            nearby_ids = [res["id"] for res in nearby_results]
+            dist_map = {res["id"]: res["dist"] for res in nearby_results}
+            
+            # Filter DB query to only include nearby colleges
+            query = query.filter(College.id.in_(nearby_ids))
+            
+            # Execute query
+            results = query.all()
+            for college, avg_rating in results:
+                college.distance = dist_map.get(college.id)
+                college.rating = float(avg_rating) if avg_rating else 0.0
+                colleges_list.append(college)
+        else:
+            # Fallback when redis fails: compute distance manually
+            results = query.all()
+            for college, avg_rating in results:
+                if college.latitude and college.longitude:
+                    college.distance = calculate_haversine_distance(filters.lat, filters.lon, college.latitude, college.longitude)
+                else:
+                    college.distance = float('inf')
+                college.rating = float(avg_rating) if avg_rating else 0.0
+                if college.distance <= filters.radius:
+                    colleges_list.append(college)
     else:
         # Standard DB fetch
         results = query.all()
@@ -165,7 +179,7 @@ async def get_colleges(
     
     # 7. Background: Save to Cache
     try:
-        await redis_client.setex(cache_key, 300, json.dumps(json_results)) # Cache for 5 mins
+        await redis.setex(cache_key, 300, json.dumps(json_results)) # Cache for 5 mins
     except Exception as e:
         logger.error(f"Failed to cache data: {e}")
 
@@ -176,7 +190,7 @@ async def get_colleges(
 async def get_colleges_filtered(
     filters: CollegeFilterParams = Depends(),
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user = Depends(get_current_user_optional)
 ):
     """
     Alias for the main colleges search endpoint.
@@ -184,11 +198,10 @@ async def get_colleges_filtered(
     return await get_colleges(filters, db, current_user)
 
 @router.get("/{college_id}", response_model=CollegeResponse)
-@cache(expire=60)
 async def get_college(
     college_id: int,
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user = Depends(get_current_user_optional)
 ):
     college = db.query(College).filter(
         College.id == college_id, College.is_active == True

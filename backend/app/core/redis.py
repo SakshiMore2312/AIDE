@@ -70,7 +70,7 @@ async def geo_remove_location(set_name: str, member_id: int):
         logger.error(f"Error removing geo location for {member_id} from {set_name}: {e}")
 
 async def geo_search_nearby(set_name: str, lng: float, lat: float, radius_km: float):
-    """Returns a list of member_ids within the radius."""
+    """Returns a list of member_ids within the radius. Returns None on error."""
     client = get_redis_client()
     try:
         results = await client.georadius(
@@ -81,4 +81,4 @@ async def geo_search_nearby(set_name: str, lng: float, lat: float, radius_km: fl
         return [{"id": int(res[0]), "dist": round(res[1], 2)} for res in results]
     except Exception as e:
         logger.error(f"Error searching nearby in {set_name}: {e}")
-        return []
+        return None

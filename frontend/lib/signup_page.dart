@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'hover_button.dart';
+import 'services/api_service.dart';
 
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
@@ -15,6 +16,33 @@ class _SignupPageState extends State<SignupPage> {
   final emailController = TextEditingController();
   final phoneController = TextEditingController();
   final passwordController = TextEditingController();
+  final ApiService _apiService = ApiService();
+  bool _isLoading = false;
+
+  void _handleSignup() async {
+    if (_formKey.currentState!.validate()) {
+      setState(() => _isLoading = true);
+      try {
+        await _apiService.register(
+          nameController.text,
+          emailController.text,
+          passwordController.text,
+        );
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Account created! Please check your email for verification.")),
+        );
+        Navigator.pop(context);
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error: ${e.toString()}")),
+        );
+      } finally {
+        if (mounted) setState(() => _isLoading = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -111,17 +139,12 @@ class _SignupPageState extends State<SignupPage> {
 
               const SizedBox(height: 24),
 
-              HoverButton(
-                text: "Create Account",
-                onPressed: () {
-                  if (_formKey.currentState!.validate()) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Account Created")),
-                    );
-                    Navigator.pop(context);
-                  }
-                },
-              ),
+              _isLoading 
+                ? const Center(child: CircularProgressIndicator())
+                : HoverButton(
+                    text: "Create Account",
+                    onPressed: _handleSignup,
+                  ),
             ],
           ),
         ),

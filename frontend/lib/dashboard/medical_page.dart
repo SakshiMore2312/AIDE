@@ -1,7 +1,9 @@
 import 'package:educonnect/models/hospital.dart';
 import 'package:educonnect/services/api_service.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'widgets/filter_bottom_sheet.dart';
+import 'subpage/medical_details.dart' as sub;
 
 class MedicalPage extends StatefulWidget {
   const MedicalPage({super.key});
@@ -16,10 +18,10 @@ class _MedicalPageState extends State<MedicalPage> {
   String _searchQuery = "";
   bool _bloodBank = false;
   bool _ambulance = false;
-  String _sortBy = "name";
+  String _sortBy = "distance";
   String _order = "asc";
   String _minRating = "any";
-  double _radius = 50.0;
+  double _radius = 10.0;
 
   @override
   void initState() {
@@ -27,12 +29,16 @@ class _MedicalPageState extends State<MedicalPage> {
     _fetchHospitals();
   }
 
-  void _fetchHospitals() {
+  void _fetchHospitals() async {
+    final prefs = await SharedPreferences.getInstance();
+    final lat = prefs.getDouble('lat');
+    final lon = prefs.getDouble('lon');
+
     setState(() {
       _hospitalsFuture = _apiService.getHospitals(
         query: _searchQuery.isNotEmpty ? _searchQuery : null,
-        lat: 18.52, // Mock Pune Lat
-        lon: 73.85, // Mock Pune Lon
+        lat: lat, 
+        lon: lon, 
         radius: _radius,
         bloodBank: _bloodBank,
         ambulance: _ambulance,
@@ -54,26 +60,11 @@ class _MedicalPageState extends State<MedicalPage> {
             children: [
               /// 🔹 Title
               const Text(
-                "Medical",
+                "Medical Services",
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
                 ),
-              ),
-
-              const SizedBox(height: 4),
-
-              /// 🔹 Location
-              Row(
-                children: const [
-                  Icon(Icons.location_on_outlined,
-                      size: 18, color: Colors.grey),
-                  SizedBox(width: 4),
-                  Text(
-                    "Bangalore, Karnataka",
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ],
               ),
 
               const SizedBox(height: 20),
@@ -101,7 +92,7 @@ class _MedicalPageState extends State<MedicalPage> {
                         },
                         decoration: const InputDecoration(
                           icon: Icon(Icons.search),
-                          hintText: "Search hospitals...",
+                          hintText: "Search in Medical...",
                           border: InputBorder.none,
                         ),
                       ),
@@ -145,33 +136,50 @@ class _MedicalPageState extends State<MedicalPage> {
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
-
-              /// 🔹 Blood Bank & Ambulance Buttons
+              const SizedBox(height: 12),
+              
+              /// 🔹 SORTING INDICATOR
               Row(
                 children: [
-                  _medicalChip(
-                    icon: Icons.bloodtype_outlined,
-                    label: "Blood Bank",
-                    borderColor: Colors.red,
-                    isSelected: _bloodBank,
-                    onTap: () {
-                      _bloodBank = !_bloodBank;
-                      _fetchHospitals();
-                    },
-                  ),
-                  const SizedBox(width: 12),
-                  _medicalChip(
-                    icon: Icons.local_hospital_outlined,
-                    label: "Ambulance",
-                    borderColor: Colors.blue,
-                    isSelected: _ambulance,
-                    onTap: () {
-                      _ambulance = !_ambulance;
-                      _fetchHospitals();
-                    },
+                  const Icon(Icons.sort, size: 16, color: Colors.grey),
+                  const SizedBox(width: 4),
+                  Text(
+                    "Sorted by $_sortBy ($_order)",
+                    style: const TextStyle(color: Colors.grey, fontSize: 12),
                   ),
                 ],
+              ),
+              const SizedBox(height: 20),
+
+              /// 🔹 Categories (Blood Bank & Ambulance)
+              const Text("Medical Categories", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 12),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _medicalChip(
+                      icon: Icons.bloodtype_outlined,
+                      label: "Blood Bank",
+                      borderColor: Colors.red,
+                      isSelected: _bloodBank,
+                      onTap: () {
+                        _bloodBank = !_bloodBank;
+                        _fetchHospitals();
+                      },
+                    ),
+                    _medicalChip(
+                      icon: Icons.local_hospital_outlined,
+                      label: "Ambulance",
+                      borderColor: Colors.blue,
+                      isSelected: _ambulance,
+                      onTap: () {
+                        _ambulance = !_ambulance;
+                        _fetchHospitals();
+                      },
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 25),
 
@@ -184,7 +192,7 @@ class _MedicalPageState extends State<MedicalPage> {
                   } else if (snapshot.hasError) {
                     return Center(child: Text('Error: ${snapshot.error}'));
                   } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return const Center(child: Text('No hospitals found'));
+                    return const Center(child: Text('No data available'));
                   }
 
                   final hospitals = snapshot.data!;
@@ -213,7 +221,7 @@ class _MedicalPageState extends State<MedicalPage> {
     );
   }
 
-  /// 🔹 Reusable Button Widget
+  /// 🔹 Reusable Vertical Card Widget
   Widget _medicalChip({
     required IconData icon,
     required String label,
@@ -221,30 +229,38 @@ class _MedicalPageState extends State<MedicalPage> {
     required bool isSelected,
     required VoidCallback onTap,
   }) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: isSelected ? borderColor.withOpacity(0.1) : Colors.transparent,
-            border: Border.all(color: isSelected ? borderColor : Colors.grey.shade300),
-            borderRadius: BorderRadius.circular(30),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(right: 12),
+        width: 100,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          color: isSelected 
+              ? borderColor.withOpacity(isDark ? 0.3 : 0.2) 
+              : (isDark ? Colors.grey.shade900 : Colors.grey.shade50),
+          border: Border.all(
+            color: isSelected ? borderColor : borderColor.withOpacity(0.3), 
+            width: 1.5
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 18, color: isSelected ? borderColor : Colors.grey),
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: TextStyle(
-                  color: isSelected ? borderColor : Colors.grey.shade700,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                ),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: borderColor, size: 28),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: TextStyle(
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                fontSize: 12,
+                color: isSelected 
+                    ? (isDark ? Colors.white : Colors.black) 
+                    : Colors.grey,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -252,15 +268,25 @@ class _MedicalPageState extends State<MedicalPage> {
 
   /// 🔹 Hospital Card Widget
   Widget _medicalHospitalCard(Hospital hospital) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(20),
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => sub.MedicalDetailsPage(hospital: hospital),
+          ),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 20),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(16),
         boxShadow: const [
           BoxShadow(
             color: Colors.black12,
-            blurRadius: 10,
+            blurRadius: 4,
+            offset: Offset(0, 2),
           ),
         ],
       ),
@@ -272,7 +298,7 @@ class _MedicalPageState extends State<MedicalPage> {
             children: [
               ClipRRect(
                 borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(20),
+                  top: Radius.circular(16),
                 ),
                 child: Image.network(
                   hospital.image ??
@@ -320,20 +346,44 @@ class _MedicalPageState extends State<MedicalPage> {
                 Text(
                   hospital.name,
                   style: const TextStyle(
-                    fontSize: 18,
+                    fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 8),
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Icon(Icons.star, color: Colors.orange, size: 18),
-                    const SizedBox(width: 4),
-                    Text(hospital.rating.toString()),
+                    Row(
+                      children: [
+                        const Icon(Icons.star_border, color: Colors.orange, size: 16),
+                        const SizedBox(width: 4),
+                        Text(
+                          hospital.rating.toString(),
+                          style: const TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                      ],
+                    ),
+                    Expanded(
+                      child: Text(
+                        "Beds: ${hospital.availableBeds}",
+                        textAlign: TextAlign.right,
+                        style: TextStyle(
+                          color: Colors.blue.shade800,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Icon(Icons.location_on_outlined,
                         size: 16, color: Colors.grey),
@@ -341,26 +391,24 @@ class _MedicalPageState extends State<MedicalPage> {
                     Expanded(
                       child: Text(
                         hospital.address,
-                        style: const TextStyle(color: Colors.grey),
+                        style: const TextStyle(color: Colors.grey, fontSize: 12),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 10),
-                Text(
-                  "Available Beds: ${hospital.availableBeds}",
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 8),
                 Text(
                   "Emergency: ${hospital.emergencyContact}",
-                  style: const TextStyle(color: Colors.red),
+                  style: const TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
           ),
         ],
       ),
+    ),
     );
   }
 }

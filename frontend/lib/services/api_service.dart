@@ -19,13 +19,28 @@ class ApiService {
   }
 
   // --- Education Module ---
-  Future<List<College>> getColleges({String? query, double? lat, double? lon, double? radius, String? sortBy, String? order, String? minRating}) async {
+  Future<Map<String, dynamic>> getCollege(int id) async {
+    final headers = await _getHeaders();
+    final response = await http.get(
+      Uri.parse('$baseUrl/education/colleges/$id'),
+      headers: headers,
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to load college details');
+    }
+  }
+
+  Future<List<College>> getColleges({String? query, double? lat, double? lon, double? radius, String? type, String? sortBy, String? order, String? minRating}) async {
     final headers = await _getHeaders();
     String queryStr = '?';
     if (query != null) queryStr += 'query=$query&';
     if (lat != null) queryStr += 'lat=$lat&';
     if (lon != null) queryStr += 'lon=$lon&';
     if (radius != null) queryStr += 'radius=$radius&';
+    if (type != null) queryStr += 'type=$type&';
     if (sortBy != null) queryStr += 'sort_by=$sortBy&';
     if (order != null) queryStr += 'order=$order&';
 
@@ -42,7 +57,51 @@ class ApiService {
     }
   }
 
+  Future<List<dynamic>> getCollegeReviews(int collegeId) async {
+    final headers = await _getHeaders();
+    final response = await http.get(
+      Uri.parse('$baseUrl/education/colleges/$collegeId/reviews'),
+      headers: headers,
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to load reviews');
+    }
+  }
+
+  Future<void> postCollegeReview(int collegeId, double rating, String content) async {
+    final headers = await _getHeaders();
+    final response = await http.post(
+      Uri.parse('$baseUrl/education/colleges/$collegeId/reviews'),
+      headers: headers,
+      body: json.encode({
+        'rating': rating,
+        'content': content,
+      }),
+    );
+
+    if (response.statusCode != 201) {
+      throw Exception('Failed to post review');
+    }
+  }
+
   // --- Medical Module ---
+  Future<Map<String, dynamic>> getHospital(int id) async {
+    final headers = await _getHeaders();
+    final response = await http.get(
+      Uri.parse('$baseUrl/medical/hospitals/$id'),
+      headers: headers,
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to load hospital details');
+    }
+  }
+
   Future<List<Hospital>> getHospitals({String? query, double? lat, double? lon, double? radius, bool? bloodBank, bool? ambulance, String? sortBy, String? order, String? minRating}) async {
     final headers = await _getHeaders();
     String queryStr = '?';
@@ -68,14 +127,59 @@ class ApiService {
     }
   }
 
+  Future<List<dynamic>> getHospitalReviews(int hospitalId) async {
+    final headers = await _getHeaders();
+    final response = await http.get(
+      Uri.parse('$baseUrl/medical/hospitals/$hospitalId/reviews'),
+      headers: headers,
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to load reviews');
+    }
+  }
+
+  Future<void> postHospitalReview(int hospitalId, double rating, String content) async {
+    final headers = await _getHeaders();
+    final response = await http.post(
+      Uri.parse('$baseUrl/medical/hospitals/$hospitalId/reviews'),
+      headers: headers,
+      body: json.encode({
+        'rating': rating,
+        'content': content,
+      }),
+    );
+
+    if (response.statusCode != 201) {
+      throw Exception('Failed to post review');
+    }
+  }
+
   // --- Stay Module ---
-  Future<List<PG>> getPGs({String? query, double? lat, double? lon, double? radius, String? sortBy, String? order, String? minRating}) async {
+  Future<Map<String, dynamic>> getPG(int id) async {
+    final headers = await _getHeaders();
+    final response = await http.get(
+      Uri.parse('$baseUrl/stay/pgs/$id'),
+      headers: headers,
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to load PG details');
+    }
+  }
+
+  Future<List<PG>> getPGs({String? query, double? lat, double? lon, double? radius, String? gender, String? sortBy, String? order, String? minRating}) async {
     final headers = await _getHeaders();
     String queryStr = '?';
     if (query != null) queryStr += 'query=$query&';
     if (lat != null) queryStr += 'lat=$lat&';
     if (lon != null) queryStr += 'lon=$lon&';
     if (radius != null) queryStr += 'radius=$radius&';
+    if (gender != null) queryStr += 'gender=$gender&';
     if (sortBy != null) queryStr += 'sort_by=$sortBy&';
     if (order != null) queryStr += 'order=$order&';
 
@@ -89,6 +193,36 @@ class ApiService {
       return body.map((item) => PG.fromJson(item)).toList();
     } else {
       throw Exception('Failed to load PGs');
+    }
+  }
+
+  Future<List<dynamic>> getPGReviews(int pgId) async {
+    final headers = await _getHeaders();
+    final response = await http.get(
+      Uri.parse('$baseUrl/stay/pgs/$pgId/reviews'),
+      headers: headers,
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to load reviews');
+    }
+  }
+
+  Future<void> postPGReview(int pgId, double rating, String content) async {
+    final headers = await _getHeaders();
+    final response = await http.post(
+      Uri.parse('$baseUrl/stay/pgs/$pgId/reviews'),
+      headers: headers,
+      body: json.encode({
+        'rating': rating,
+        'content': content,
+      }),
+    );
+
+    if (response.statusCode != 201) {
+      throw Exception('Failed to post review');
     }
   }
 
@@ -131,7 +265,20 @@ class ApiService {
     }
   }
 
-  Future<void> changePassword(String currentPassword, String newPassword) async {
+  Future<void> requestChangePasswordOtp() async {
+    final headers = await _getHeaders();
+    final response = await http.post(
+      Uri.parse('$baseUrl/auth/request-change-password-otp'),
+      headers: headers,
+    );
+
+    if (response.statusCode != 200) {
+      final error = json.decode(response.body);
+      throw Exception(error['detail'] ?? 'Failed to request OTP');
+    }
+  }
+
+  Future<void> changePassword(String currentPassword, String newPassword, String otpCode) async {
     final headers = await _getHeaders();
     final response = await http.post(
       Uri.parse('$baseUrl/auth/change-password'),
@@ -139,12 +286,43 @@ class ApiService {
       body: json.encode({
         'current_password': currentPassword,
         'new_password': newPassword,
+        'otp_code': otpCode,
       }),
     );
 
     if (response.statusCode != 200) {
       final error = json.decode(response.body);
       throw Exception(error['detail'] ?? 'Failed to change password');
+    }
+  }
+
+  Future<void> forgotPassword(String email) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/auth/forgot-password'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({'email': email}),
+    );
+
+    if (response.statusCode != 200) {
+      final error = json.decode(response.body);
+      throw Exception(error['detail'] ?? 'Failed to send reset code');
+    }
+  }
+
+  Future<void> resetPassword(String email, String otpCode, String newPassword) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/auth/reset-password'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
+        'email': email,
+        'token': otpCode, // Backend uses 'token' field for the OTP code
+        'new_password': newPassword,
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      final error = json.decode(response.body);
+      throw Exception(error['detail'] ?? 'Failed to reset password');
     }
   }
 }

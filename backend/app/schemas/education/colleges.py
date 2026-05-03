@@ -13,6 +13,7 @@ class CollegeBase(BaseModel):
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     phone_number: Optional[str] = Field(None, max_length=50)
+    email: Optional[EmailStr] = None
     website: Optional[HttpUrl] = None
     google_maps_link: Optional[HttpUrl] = None
     streams_available: Optional[str] = None
@@ -37,6 +38,7 @@ class CollegeUpdate(BaseModel):
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     phone_number: Optional[str] = None
+    email: Optional[EmailStr] = None
     website: Optional[HttpUrl] = None
     google_maps_link: Optional[HttpUrl] = None
     streams_available: Optional[str] = None

@@ -4,17 +4,19 @@ class ReviewsPage extends StatelessWidget {
   const ReviewsPage({super.key});
 
   Widget reviewCard({
+    required BuildContext context,
     required String category,
     required String title,
     required String review,
     required String date,
     required int rating,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
@@ -28,7 +30,7 @@ class ReviewsPage extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.purple.shade50,
+                  color: isDark ? Colors.purple.shade900 : Colors.purple.shade50,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(category,
@@ -69,7 +71,7 @@ class ReviewsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text("My Reviews"),
       ),
@@ -82,6 +84,7 @@ class ReviewsPage extends StatelessWidget {
           ),
 
           reviewCard(
+            context: context,
             category: "education",
             title: "St. Xavier's High School",
             rating: 5,
@@ -91,6 +94,7 @@ class ReviewsPage extends StatelessWidget {
           ),
 
           reviewCard(
+            context: context,
             category: "stay",
             title: "Comfort Living PG",
             rating: 4,

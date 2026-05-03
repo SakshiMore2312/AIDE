@@ -13,7 +13,7 @@ from app.schemas.stay.pg import (
     PGUpdate,
     PGResponse
 )
-from app.api.v1.endpoints.deps import get_current_user, require_roles
+from app.api.v1.endpoints.deps import get_current_user, get_current_user_optional, require_roles
 from fastapi.encoders import jsonable_encoder
 
 router = APIRouter(
@@ -82,7 +82,7 @@ class PGFilterParams:
 async def get_pgs(
     filters: PGFilterParams = Depends(),
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user = Depends(get_current_user_optional)
 ):
     """
     Get PGs with advanced dynamic filtering, caching, and geo-proximity sorting.
@@ -125,15 +125,27 @@ async def get_pgs(
     
     if use_geo:
         nearby_results = await geo_search_nearby("geo:pgs", filters.lon, filters.lat, filters.radius)
-        nearby_ids = [res["id"] for res in nearby_results]
-        dist_map = {res["id"]: res["dist"] for res in nearby_results}
-        
-        query = query.filter(PG.id.in_(nearby_ids))
-        results = query.all()
-        for pg, avg_rating in results:
-            pg.distance = dist_map.get(pg.id)
-            pg.rating = float(avg_rating) if avg_rating else 0.0
-            pgs_list.append(pg)
+        if nearby_results is not None:
+            nearby_ids = [res["id"] for res in nearby_results]
+            dist_map = {res["id"]: res["dist"] for res in nearby_results}
+            
+            query = query.filter(PG.id.in_(nearby_ids))
+            results = query.all()
+            for pg, avg_rating in results:
+                pg.distance = dist_map.get(pg.id)
+                pg.rating = float(avg_rating) if avg_rating else 0.0
+                pgs_list.append(pg)
+        else:
+            # Fallback when redis fails: compute distance manually
+            results = query.all()
+            for pg, avg_rating in results:
+                if pg.latitude and pg.longitude:
+                    pg.distance = calculate_haversine_distance(filters.lat, filters.lon, pg.latitude, pg.longitude)
+                else:
+                    pg.distance = float('inf')
+                pg.rating = float(avg_rating) if avg_rating else 0.0
+                if pg.distance <= filters.radius:
+                    pgs_list.append(pg)
     else:
         results = query.all()
         for pg, avg_rating in results:
@@ -168,7 +180,7 @@ async def get_pgs(
 async def get_pgs_filtered(
     filters: PGFilterParams = Depends(),
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user = Depends(get_current_user_optional)
 ):
     """
     Alias for the main PGs search endpoint.
@@ -176,11 +188,10 @@ async def get_pgs_filtered(
     return await get_pgs(filters, db, current_user)
 
 @router.get("/{pg_id}", response_model=PGResponse)
-@cache(expire=60)
 async def get_pg(
     pg_id: int,
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user = Depends(get_current_user_optional)
 ):
     pg = db.query(PG).filter(PG.id == pg_id, PG.is_active == True).first()
     if not pg:

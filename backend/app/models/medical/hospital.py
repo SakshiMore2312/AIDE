@@ -18,6 +18,8 @@ class Hospital(Base):
     email = Column(String(255), nullable=True)
     website = Column(String(255), nullable=True)
     google_maps_link = Column(Text, nullable=True)
+    blood_bank_available = Column(Boolean, default=False, nullable=False)
+    ambulance_available = Column(Boolean, default=False, nullable=False)
     
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)

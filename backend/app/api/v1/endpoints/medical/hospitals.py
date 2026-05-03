@@ -5,7 +5,7 @@ from fastapi.encoders import jsonable_encoder
 
 from app.core.database import get_db
 from app.core.logger import logger
-from app.api.v1.endpoints.deps import get_current_user, require_roles
+from app.api.v1.endpoints.deps import get_current_user, get_current_user_optional, require_roles
 from app.models.medical.hospital import Hospital
 from app.models.medical.review import MedicalReview
 from app.schemas.medical.hospital import HospitalCreate, HospitalUpdate, HospitalResponse
@@ -76,15 +76,17 @@ class HospitalFilterParams:
 async def get_hospitals(
     filters: HospitalFilterParams = Depends(),
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user = Depends(get_current_user_optional)
 ):
     """
     Get hospitals with advanced dynamic filtering, caching, and geo-proximity sorting.
     """
     # 1. Cache lookup
     cache_key = filters.get_cache_key()
+    from app.core.redis import get_redis_client
+    redis = get_redis_client()
     try:
-        cached = await redis_client.get(cache_key)
+        cached = await redis.get(cache_key)
         if cached:
             return json.loads(cached)
     except Exception as e:
@@ -111,15 +113,26 @@ async def get_hospitals(
     
     if use_geo:
         nearby_results = await geo_search_nearby("geo:hospitals", filters.lon, filters.lat, filters.radius)
-        nearby_ids = [res["id"] for res in nearby_results]
-        dist_map = {res["id"]: res["dist"] for res in nearby_results}
-        
-        query = query.filter(Hospital.id.in_(nearby_ids))
-        results = query.all()
-        for hospital, avg_rating in results:
-            hospital.distance = dist_map.get(hospital.id)
-            hospital.rating = float(avg_rating) if avg_rating else 0.0
-            hospitals_list.append(hospital)
+        if nearby_results is not None:
+            nearby_ids = [res["id"] for res in nearby_results]
+            dist_map = {res["id"]: res["dist"] for res in nearby_results}
+            
+            query = query.filter(Hospital.id.in_(nearby_ids))
+            results = query.all()
+            for hospital, avg_rating in results:
+                hospital.distance = dist_map.get(hospital.id)
+                hospital.rating = float(avg_rating) if avg_rating else 0.0
+                hospitals_list.append(hospital)
+        else:
+            results = query.all()
+            for hospital, avg_rating in results:
+                if hospital.latitude and hospital.longitude:
+                    hospital.distance = calculate_haversine_distance(filters.lat, filters.lon, hospital.latitude, hospital.longitude)
+                else:
+                    hospital.distance = float('inf')
+                hospital.rating = float(avg_rating) if avg_rating else 0.0
+                if hospital.distance <= filters.radius:
+                    hospitals_list.append(hospital)
     else:
         results = query.all()
         for hospital, avg_rating in results:
@@ -142,7 +155,7 @@ async def get_hospitals(
     from fastapi.encoders import jsonable_encoder
     json_data = jsonable_encoder(final_results)
     try:
-        await redis_client.setex(cache_key, 300, json.dumps(json_data))
+        await redis.setex(cache_key, 300, json.dumps(json_data))
     except Exception as e:
         logger.error(f"Cache failed: {e}")
 
@@ -153,7 +166,7 @@ async def get_hospitals(
 async def get_hospitals_filtered(
     filters: HospitalFilterParams = Depends(),
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user = Depends(get_current_user_optional)
 ):
     """
     Alias for the main hospitals search endpoint.
@@ -162,11 +175,10 @@ async def get_hospitals_filtered(
 
 
 @router.get("/{hospital_id}", response_model=HospitalResponse)
-@cache(expire=60)
 async def get_hospital(
     hospital_id: int,
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user = Depends(get_current_user_optional)
 ):
     hospital = db.query(Hospital).filter(Hospital.id == hospital_id, Hospital.is_active == True).first()
     if not hospital:

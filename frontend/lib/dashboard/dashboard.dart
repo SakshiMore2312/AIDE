@@ -26,10 +26,10 @@ class _DashboardPageState extends State<DashboardPage> {
     return Scaffold(
       extendBody: true,
       
-
       appBar: AppBar(
-        title: const Text("Smart City"),
+        title: const Text("AIDE", style: TextStyle(fontWeight: FontWeight.bold)),
         elevation: 0,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       ),
 
       body: pages[currentIndex],

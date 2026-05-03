@@ -4,6 +4,7 @@ class SavedListingsPage extends StatelessWidget {
   const SavedListingsPage({super.key});
 
   Widget savedCard({
+    required BuildContext context,
     required String category,
     required String title,
     required String location,
@@ -13,7 +14,7 @@ class SavedListingsPage extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
@@ -90,7 +91,7 @@ class SavedListingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text("Saved Listings"),
       ),
@@ -104,18 +105,21 @@ class SavedListingsPage extends StatelessWidget {
             ),
           ),
           savedCard(
+            context: context,
             category: "Education",
             title: "St. Xavier's High School",
             location: "Bangalore, Karnataka",
             rating: "4.8",
           ),
           savedCard(
+            context: context,
             category: "Stay",
             title: "Comfort Living PG",
             location: "Koramangala, Bangalore",
             rating: "4.5",
           ),
           savedCard(
+            context: context,
             category: "Medical",
             title: "Apollo Clinic",
             location: "Indiranagar, Bangalore",

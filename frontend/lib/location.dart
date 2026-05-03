@@ -1,12 +1,79 @@
 import 'package:flutter/material.dart';
 import 'dashboard/dashboard.dart';
-class LocationPage extends StatelessWidget {
+import 'package:geolocator/geolocator.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+class LocationPage extends StatefulWidget {
   const LocationPage({super.key});
 
   @override
+  State<LocationPage> createState() => _LocationPageState();
+}
+
+class _LocationPageState extends State<LocationPage> {
+  bool _isLoading = false;
+
+  Future<void> _requestLocation() async {
+    setState(() => _isLoading = true);
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        throw Exception('Location services are disabled.');
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          throw Exception('Location permissions are denied');
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        throw Exception('Location permissions are permanently denied');
+      }
+
+      Position position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high);
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setDouble('lat', position.latitude);
+      await prefs.setDouble('lon', position.longitude);
+
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const DashboardPage()),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString())),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _skipLocation() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('lat');
+    await prefs.remove('lon');
+    if (mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const DashboardPage()),
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6FB),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 28),
         child: Column(
@@ -38,26 +105,26 @@ class LocationPage extends StatelessWidget {
             const SizedBox(height: 40),
 
             /// Title
-            const Text(
+            Text(
               "Enable Location Access",
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 26,
                 fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                color: isDark ? Colors.white : Colors.black87,
               ),
             ),
 
             const SizedBox(height: 20),
 
             /// Description
-            const Text(
+            Text(
               "We need your location to show nearby educational "
               "institutions, medical facilities, and PG accommodations",
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 16,
-                color: Colors.black54,
+                color: isDark ? Colors.white70 : Colors.black54,
                 height: 1.5,
               ),
             ),
@@ -78,15 +145,7 @@ class LocationPage extends StatelessWidget {
                   ),
                 ),
                 child: ElevatedButton(
-                  /// ALLOW
-                    onPressed: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const DashboardPage(),
-                        ),
-                      );
-                    },
+                  onPressed: _isLoading ? null : _requestLocation,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.transparent,
                     shadowColor: Colors.transparent,
@@ -95,14 +154,16 @@ class LocationPage extends StatelessWidget {
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                  child: const Text(
-                    "Allow Location Access",
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
+                  child: _isLoading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text(
+                          "Allow Location Access",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
                 ),
               ),
             ),
@@ -111,20 +172,12 @@ class LocationPage extends StatelessWidget {
 
             /// Skip Button
             TextButton(
-              /// ALLOW
-              onPressed: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const DashboardPage(),
-                  ),
-                );
-              },
-              child: const Text(
+              onPressed: _skipLocation,
+              child: Text(
                 "Skip for Now",
                 style: TextStyle(
                   fontSize: 16,
-                  color: Colors.black87,
+                  color: isDark ? Colors.white : Colors.black87,
                 ),
               ),
             ),
@@ -132,13 +185,13 @@ class LocationPage extends StatelessWidget {
             const SizedBox(height: 30),
 
             /// Privacy Text
-            const Text(
+            Text(
               "Your location data is only used to provide relevant results\n"
               "and is never shared with third parties",
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 12,
-                color: Colors.black45,
+                color: isDark ? Colors.white54 : Colors.black45,
               ),
             ),
           ],

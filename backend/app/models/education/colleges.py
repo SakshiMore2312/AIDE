@@ -25,6 +25,7 @@ class College(Base):
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
     phone_number = Column(String(50), nullable=False, index=True)
+    email = Column(String(255), nullable=True)
     website = Column(String(255), nullable=True)
     google_maps_link = Column(String(500), nullable=True)
     streams_available = Column(Text, nullable=True)

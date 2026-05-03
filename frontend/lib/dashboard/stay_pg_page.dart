@@ -1,6 +1,7 @@
 import 'package:educonnect/models/pg.dart';
 import 'package:educonnect/services/api_service.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'subpage/stay_details.dart';
 import 'widgets/filter_bottom_sheet.dart';
 
@@ -15,10 +16,11 @@ class _StayPGPageState extends State<StayPGPage> {
   final ApiService _apiService = ApiService();
   late Future<List<PG>> _pgsFuture;
   String _searchQuery = "";
-  String _sortBy = "name";
+  String _sortBy = "distance";
   String _order = "asc";
   String _minRating = "any";
-  double _radius = 50.0;
+  double _radius = 10.0;
+  String? _selectedGender; // Changed to match backend filter
 
   @override
   void initState() {
@@ -26,18 +28,71 @@ class _StayPGPageState extends State<StayPGPage> {
     _fetchPGs();
   }
 
-  void _fetchPGs() {
+  void _fetchPGs() async {
+    final prefs = await SharedPreferences.getInstance();
+    final lat = prefs.getDouble('lat');
+    final lon = prefs.getDouble('lon');
+
     setState(() {
       _pgsFuture = _apiService.getPGs(
         query: _searchQuery.isNotEmpty ? _searchQuery : null,
-        lat: 18.52, // Mock Pune Lat
-        lon: 73.85, // Mock Pune Lon
+        lat: lat,
+        lon: lon,
         radius: _radius,
+        gender: _selectedGender, // Pass selected gender
         sortBy: _sortBy,
         order: _order,
         minRating: _minRating,
       );
     });
+  }
+
+  Widget _stayChip(BuildContext context, String title, IconData icon, Color color, String? genderValue) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    bool isSelected = _selectedGender == genderValue;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          if (_selectedGender == genderValue) {
+            _selectedGender = null;
+          } else {
+            _selectedGender = genderValue;
+          }
+        });
+        _fetchPGs();
+      },
+      child: Container(
+        margin: const EdgeInsets.only(right: 12),
+        width: 90,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          color: isSelected 
+              ? color.withOpacity(isDark ? 0.3 : 0.2) 
+              : (isDark ? Colors.grey.shade900 : Colors.grey.shade50),
+          border: Border.all(
+            color: isSelected ? color : color.withOpacity(0.3), 
+            width: 1.5
+          ),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 28),
+            const SizedBox(height: 8),
+            Text(
+              title,
+              style: TextStyle(
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                fontSize: 12,
+                color: isSelected 
+                    ? (isDark ? Colors.white : Colors.black) 
+                    : Colors.grey,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -50,23 +105,11 @@ class _StayPGPageState extends State<StayPGPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                "Stay / PG",
+                "Stay / PG Services",
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
                 ),
-              ),
-              const SizedBox(height: 4),
-              Row(
-                children: const [
-                  Icon(Icons.location_on_outlined,
-                      size: 18, color: Colors.grey),
-                  SizedBox(width: 4),
-                  Text(
-                    "Bangalore, Karnataka",
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ],
               ),
               const SizedBox(height: 20),
 
@@ -93,7 +136,7 @@ class _StayPGPageState extends State<StayPGPage> {
                         },
                         decoration: const InputDecoration(
                           icon: Icon(Icons.search),
-                          hintText: "Search PG & stays...",
+                          hintText: "Search in Stay...",
                           border: InputBorder.none,
                         ),
                       ),
@@ -137,6 +180,35 @@ class _StayPGPageState extends State<StayPGPage> {
                   ),
                 ],
               ),
+              const SizedBox(height: 12),
+
+              /// SORTING INDICATOR
+              Row(
+                children: [
+                  const Icon(Icons.sort, size: 16, color: Colors.grey),
+                  const SizedBox(width: 4),
+                  Text(
+                    "Sorted by $_sortBy ($_order)",
+                    style: const TextStyle(color: Colors.grey, fontSize: 12),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              /// CATEGORIES
+              const Text("Stay Categories", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 12),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _stayChip(context, "Boys", Icons.boy, Colors.blue, "Boys"),
+                    _stayChip(context, "Girls", Icons.girl, Colors.pink, "Girls"),
+                    _stayChip(context, "Co-ed", Icons.people, Colors.orange, "Co-ed"),
+                    _stayChip(context, "All", Icons.all_inclusive, Colors.grey, null),
+                  ],
+                ),
+              ),
               const SizedBox(height: 25),
 
               FutureBuilder<List<PG>>(
@@ -147,7 +219,7 @@ class _StayPGPageState extends State<StayPGPage> {
                   } else if (snapshot.hasError) {
                     return Center(child: Text('Error: ${snapshot.error}'));
                   } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return const Center(child: Text('No properties found'));
+                    return const Center(child: Text('No data available'));
                   }
 
                   final pgs = snapshot.data!;
@@ -188,11 +260,12 @@ class _StayPGPageState extends State<StayPGPage> {
         margin: const EdgeInsets.only(bottom: 20),
         decoration: BoxDecoration(
           color: Theme.of(context).cardColor,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(16),
           boxShadow: const [
             BoxShadow(
               color: Colors.black12,
-              blurRadius: 10,
+              blurRadius: 4,
+              offset: Offset(0, 2),
             ),
           ],
         ),
@@ -202,7 +275,7 @@ class _StayPGPageState extends State<StayPGPage> {
             /// Image
             ClipRRect(
               borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(20)),
+                  const BorderRadius.vertical(top: Radius.circular(16)),
               child: Image.network(
                 pg.image ??
                     "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2",
@@ -223,43 +296,47 @@ class _StayPGPageState extends State<StayPGPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Text(
+                    pg.name,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.star_border, color: Colors.orange, size: 16),
+                          const SizedBox(width: 4),
+                          Text(
+                            pg.rating.toString(),
+                            style: const TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                        ],
+                      ),
                       Expanded(
                         child: Text(
-                          pg.name,
-                          style: const TextStyle(
-                            fontSize: 18,
+                          "Price: ₹${pg.rent}/mo",
+                          textAlign: TextAlign.right,
+                          style: TextStyle(
+                            color: Colors.blue.shade800,
                             fontWeight: FontWeight.bold,
+                            fontSize: 13,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.green.shade100,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          pg.gender,
-                          style: const TextStyle(
-                              color: Colors.green, fontSize: 12),
-                        ),
-                      )
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      const Icon(Icons.star, color: Colors.orange, size: 18),
-                      const SizedBox(width: 4),
-                      Text(pg.rating.toString()),
                     ],
                   ),
                   const SizedBox(height: 8),
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Icon(Icons.location_on_outlined,
                           size: 16, color: Colors.grey),
@@ -267,27 +344,30 @@ class _StayPGPageState extends State<StayPGPage> {
                       Expanded(
                         child: Text(
                           pg.address,
-                          style: const TextStyle(color: Colors.grey),
+                          style: const TextStyle(color: Colors.grey, fontSize: 12),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        "₹${pg.rent} / month",
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.purple,
+                        pg.gender,
+                        style: TextStyle(
+                            color: Colors.green.shade700, 
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12
                         ),
                       ),
+                      const SizedBox(width: 10),
                       Text(
-                        pg.foodIncluded ? "Food Included" : "No Food",
+                        pg.foodIncluded ? "• Food Included" : "",
                         style: const TextStyle(
-                          fontWeight: FontWeight.bold,
+                          color: Colors.grey,
+                          fontSize: 12,
                         ),
                       ),
                     ],
