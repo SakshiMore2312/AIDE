@@ -4,11 +4,11 @@ import 'theme_provider.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const EduConnectApp());
+  runApp(const AideApp());
 }
 
-class EduConnectApp extends StatelessWidget {
-  const EduConnectApp({super.key});
+class AideApp extends StatelessWidget {
+  const AideApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +17,7 @@ class EduConnectApp extends StatelessWidget {
       builder: (context, _) {
         return MaterialApp(
           debugShowCheckedModeBanner: false,
-          title: 'EduConnect',
+          title: 'Aide',
           theme: ThemeData(
             primarySwatch: Colors.deepPurple,
             brightness: Brightness.light,

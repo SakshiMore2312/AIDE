@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:educonnect/models/hospital.dart';
-import 'package:educonnect/services/api_service.dart';
+import 'package:aide/models/hospital.dart';
+import 'package:aide/services/api_service.dart';
 
 class MedicalDetailsPage extends StatefulWidget {
   final Hospital hospital;

@@ -1,7 +1,7 @@
-import 'package:educonnect/dashboard/subpage/EducationDetailsPage.dart';
-import 'package:educonnect/models/college.dart';
-import 'package:educonnect/services/api_service.dart';
-import 'package:educonnect/dashboard/widgets/filter_bottom_sheet.dart';
+import 'package:aide/dashboard/subpage/EducationDetailsPage.dart';
+import 'package:aide/models/college.dart';
+import 'package:aide/services/api_service.dart';
+import 'package:aide/dashboard/widgets/filter_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -378,4 +378,4 @@ class _EducationPageState extends State<EducationPage> {
       ),
     );
   }
-}
+}

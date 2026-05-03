@@ -1,5 +1,5 @@
-import 'package:educonnect/models/pg.dart';
-import 'package:educonnect/services/api_service.dart';
+import 'package:aide/models/pg.dart';
+import 'package:aide/services/api_service.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'subpage/stay_details.dart';
@@ -43,7 +43,7 @@ class _StayPGPageState extends State<StayPGPage> {
       },
       child: Container(
         margin: const EdgeInsets.only(right: 12),
-        width: 100,
+        width: 90,
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
           color: isSelected 
@@ -157,151 +157,124 @@ class _StayPGPageState extends State<StayPGPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          /// Search
+          Row(
             children: [
-              const Text(
-                "Stay / PG Services",
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              /// Search
-              Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).cardColor,
-                        borderRadius: BorderRadius.circular(14),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Colors.black12,
-                            blurRadius: 6,
-                          ),
-                        ],
-                      ),
-                      child: TextField(
-                        onChanged: (val) {
-                          _searchQuery = val;
-                          _fetchPGs();
-                        },
-                        decoration: InputDecoration(
-                          icon: const Icon(Icons.search),
-                          hintText: "Search in $_selectedCategory...",
-                          border: InputBorder.none,
-                        ),
-                      ),
+              Expanded(
+                child: TextField(
+                  onChanged: (val) {
+                    _searchQuery = val;
+                    _fetchPGs();
+                  },
+                  decoration: InputDecoration(
+                    hintText: "Search in $_selectedCategory...",
+                    prefixIcon: const Icon(Icons.search),
+                    filled: true,
+                    fillColor: Theme.of(context).cardColor,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(30),
+                      borderSide: BorderSide.none,
                     ),
                   ),
-                  const SizedBox(width: 10),
-                  GestureDetector(
-                    onTap: () {
-                      showModalBottomSheet(
-                        context: context,
-                        isScrollControlled: true,
-                        backgroundColor: Colors.transparent,
-                        builder: (context) => FilterBottomSheet(
-                          initialRadius: _radius,
-                          initialSortBy: _sortBy,
-                          initialOrder: _order,
-                          initialMinRating: _minRating,
-                          onApply: (r, s, o, m) {
-                            setState(() {
-                              _radius = r;
-                              _sortBy = s;
-                              _order = o;
-                              _minRating = m;
-                            });
-                            _fetchPGs();
-                          },
-                        ),
-                      );
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).cardColor,
-                        borderRadius: BorderRadius.circular(14),
-                        boxShadow: const [
-                          BoxShadow(color: Colors.black12, blurRadius: 6),
-                        ],
-                      ),
-                      child: const Icon(Icons.tune),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-
-              /// SORTING INDICATOR
-              Row(
-                children: [
-                  const Icon(Icons.sort, size: 16, color: Colors.grey),
-                  const SizedBox(width: 4),
-                  Text(
-                    "Sorted by $_sortBy ($_order)",
-                    style: const TextStyle(color: Colors.grey, fontSize: 12),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-
-              /// CATEGORIES
-              const Text("Stay Categories", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 12),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    _categoryCard(context, "Stay", Icons.apartment, Colors.blue, "Stay"),
-                    _categoryCard(context, "PG", Icons.hotel, Colors.orange, "PG"),
-                  ],
                 ),
               ),
-              const SizedBox(height: 25),
-
-              const SizedBox(height: 10),
-
-              FutureBuilder<List<PG>>(
-                future: _pgsFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  } else if (snapshot.hasError) {
-                    return Center(child: Text('Error: ${snapshot.error}'));
-                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return const Center(child: Text('No data available'));
-                  }
-
-                  final pgs = snapshot.data!;
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "${pgs.length} properties found",
-                        style: const TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      ...pgs.map((pg) => _pgCard(context, pg)).toList(),
-                    ],
+              const SizedBox(width: 10),
+              GestureDetector(
+                onTap: () {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (context) => FilterBottomSheet(
+                      initialRadius: _radius,
+                      initialSortBy: _sortBy,
+                      initialOrder: _order,
+                      initialMinRating: _minRating,
+                      onApply: (r, s, o, m) {
+                        setState(() {
+                          _radius = r;
+                          _sortBy = s;
+                          _order = o;
+                          _minRating = m;
+                        });
+                        _fetchPGs();
+                      },
+                    ),
                   );
                 },
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: const [
+                      BoxShadow(color: Colors.black12, blurRadius: 6),
+                    ],
+                  ),
+                  child: const Icon(Icons.tune),
+                ),
               ),
             ],
           ),
-        ),
+          const SizedBox(height: 12),
+
+          /// SORTING INDICATOR
+          Row(
+            children: [
+              const Icon(Icons.sort, size: 16, color: Colors.grey),
+              const SizedBox(width: 4),
+              Text(
+                "Sorted by $_sortBy ($_order)",
+                style: const TextStyle(color: Colors.grey, fontSize: 12),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          /// CATEGORIES
+          const Text("Stay Categories",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _categoryCard(
+                    context, "Stay", Icons.apartment, Colors.blue, "Stay"),
+                _categoryCard(context, "PG", Icons.hotel, Colors.orange, "PG"),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          Expanded(
+            child: FutureBuilder<List<PG>>(
+              future: _pgsFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                } else if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}'));
+                } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return const Center(child: Text('No properties available'));
+                }
+
+                final pgs = snapshot.data!;
+                return ListView.builder(
+                  itemCount: pgs.length,
+                  itemBuilder: (context, index) {
+                    return _pgCard(context, pgs[index]);
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -316,85 +289,104 @@ class _StayPGPageState extends State<StayPGPage> {
           ),
         );
       },
-      child: Card(
+      child: Container(
         margin: const EdgeInsets.only(bottom: 16),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  pg.image ?? "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2",
-                  width: 100,
-                  height: 100,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    width: 100,
-                    height: 100,
-                    color: Colors.grey.shade200,
-                    child: const Icon(Icons.home, color: Colors.grey),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: const [
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 4,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            /// IMAGE
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              child: Image.network(
+                pg.image ?? "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2",
+                height: 180,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  height: 180,
+                  width: double.infinity,
+                  color: Colors.grey.shade200,
+                  child: const Icon(Icons.home, size: 50, color: Colors.grey),
+                ),
+              ),
+            ),
+
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    pg.name,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      pg.name,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _selectedCategory,
-                      style: TextStyle(color: Colors.blue.shade700, fontSize: 12),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        const Icon(Icons.location_on, size: 14, color: Colors.grey),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            pg.address,
-                            style: const TextStyle(fontSize: 12, color: Colors.grey),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                  const SizedBox(height: 4),
+                  Text(
+                    _selectedCategory,
+                    style: TextStyle(color: Colors.blue.shade700, fontSize: 12),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.star, color: Colors.orange, size: 16),
+                          const SizedBox(width: 4),
+                          Text(
+                            "${pg.rating} ${pg.distance != null ? '(${pg.distance!.toStringAsFixed(1)} km)' : ''}",
+                            style: const TextStyle(fontWeight: FontWeight.w500),
                           ),
+                        ],
+                      ),
+                      Text(
+                        "₹${pg.rent}/mo",
+                        style: TextStyle(
+                          color: Colors.green.shade700,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          "₹${pg.rent}/mo",
-                          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.location_on_outlined, color: Colors.grey, size: 16),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          pg.address,
+                          style: const TextStyle(color: Colors.grey, fontSize: 12),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        Row(
-                          children: [
-                            const Icon(Icons.star, size: 14, color: Colors.orange),
-                            const SizedBox(width: 4),
-                            Text(
-                              "${pg.rating} ${pg.distance != null ? '(${pg.distance!.toStringAsFixed(1)} km)' : ''}",
-                              style: const TextStyle(fontSize: 12),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
-}
+}

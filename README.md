@@ -1,6 +1,6 @@
 # Aide - Comprehensive Student & Essential Services Platform
 
-**Aide** (formerly EduCare Connect) is a modern, high-performance platform designed to bridge the gap between students, parents, and essential local services. It provides a unified ecosystem for education, accommodation, and medical support, enhanced by real-time location-based searching and intelligent caching.
+**Aide** is a modern, high-performance platform designed to bridge the gap between students, parents, and essential local services. It provides a unified ecosystem for education, accommodation, and medical support, enhanced by real-time location-based searching and intelligent caching.
 
 This repository contains the **FastAPI-based Backend** that powers the **Aide Flutter Mobile Application**.
 

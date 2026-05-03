@@ -61,4 +61,4 @@ class User(Base):
         "MedicalReview",
         back_populates="user",
         cascade="all, delete-orphan"
-    )
+    )

@@ -49,7 +49,7 @@ async def lifespan(app: FastAPI):
     # Shutdown logic (closing redis etc) could go here if needed
 
 app = FastAPI(
-    title="aide API",
+    title="Aide API",
     version="1.0.0",
     lifespan=lifespan
 )

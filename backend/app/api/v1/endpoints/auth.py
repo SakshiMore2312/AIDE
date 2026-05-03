@@ -324,4 +324,4 @@ async def change_password(
     await delete_otp(f"change_pass:{current_user.email}")
     
     logger.info(f"User changed password successfully: {current_user.id}")
-    return {"message": "Password changed successfully"}
+    return {"message": "Password changed successfully"}

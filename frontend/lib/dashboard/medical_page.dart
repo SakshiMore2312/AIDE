@@ -1,5 +1,5 @@
-import 'package:educonnect/models/hospital.dart';
-import 'package:educonnect/services/api_service.dart';
+import 'package:aide/models/hospital.dart';
+import 'package:aide/services/api_service.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'widgets/filter_bottom_sheet.dart';
@@ -51,172 +51,146 @@ class _MedicalPageState extends State<MedicalPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          /// 🔹 Search Bar
+          Row(
             children: [
-              /// 🔹 Title
-              const Text(
-                "Medical Services",
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
+              Expanded(
+                child: TextField(
+                  onChanged: (val) {
+                    _searchQuery = val;
+                    _fetchHospitals();
+                  },
+                  decoration: InputDecoration(
+                    hintText: "Search in Medical...",
+                    prefixIcon: const Icon(Icons.search),
+                    filled: true,
+                    fillColor: Theme.of(context).cardColor,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(30),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
                 ),
               ),
-
-              const SizedBox(height: 20),
-
-              /// 🔹 Search Bar
-              Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).cardColor,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Colors.black12,
-                            blurRadius: 6,
-                          ),
-                        ],
-                      ),
-                      child: TextField(
-                        onChanged: (val) {
-                          _searchQuery = val;
-                          _fetchHospitals();
-                        },
-                        decoration: const InputDecoration(
-                          icon: Icon(Icons.search),
-                          hintText: "Search in Medical...",
-                          border: InputBorder.none,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  GestureDetector(
-                    onTap: () {
-                      showModalBottomSheet(
-                        context: context,
-                        isScrollControlled: true,
-                        backgroundColor: Colors.transparent,
-                        builder: (context) => FilterBottomSheet(
-                          initialRadius: _radius,
-                          initialSortBy: _sortBy,
-                          initialOrder: _order,
-                          initialMinRating: _minRating,
-                          onApply: (r, s, o, m) {
-                            setState(() {
-                              _radius = r;
-                              _sortBy = s;
-                              _order = o;
-                              _minRating = m;
-                            });
-                            _fetchHospitals();
-                          },
-                        ),
-                      );
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).cardColor,
-                        borderRadius: BorderRadius.circular(14),
-                        boxShadow: const [
-                          BoxShadow(color: Colors.black12, blurRadius: 6),
-                        ],
-                      ),
-                      child: const Icon(Icons.tune),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              
-              /// 🔹 SORTING INDICATOR
-              Row(
-                children: [
-                  const Icon(Icons.sort, size: 16, color: Colors.grey),
-                  const SizedBox(width: 4),
-                  Text(
-                    "Sorted by $_sortBy ($_order)",
-                    style: const TextStyle(color: Colors.grey, fontSize: 12),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-
-              /// 🔹 Categories (Blood Bank & Ambulance)
-              const Text("Medical Categories", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 12),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    _medicalChip(
-                      icon: Icons.bloodtype_outlined,
-                      label: "Blood Bank",
-                      borderColor: Colors.red,
-                      isSelected: _bloodBank,
-                      onTap: () {
-                        _bloodBank = !_bloodBank;
+              const SizedBox(width: 10),
+              GestureDetector(
+                onTap: () {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (context) => FilterBottomSheet(
+                      initialRadius: _radius,
+                      initialSortBy: _sortBy,
+                      initialOrder: _order,
+                      initialMinRating: _minRating,
+                      onApply: (r, s, o, m) {
+                        setState(() {
+                          _radius = r;
+                          _sortBy = s;
+                          _order = o;
+                          _minRating = m;
+                        });
                         _fetchHospitals();
                       },
                     ),
-                    _medicalChip(
-                      icon: Icons.local_hospital_outlined,
-                      label: "Ambulance",
-                      borderColor: Colors.blue,
-                      isSelected: _ambulance,
-                      onTap: () {
-                        _ambulance = !_ambulance;
-                        _fetchHospitals();
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 25),
-
-              /// 🔹 Hospitals Found
-              FutureBuilder<List<Hospital>>(
-                future: _hospitalsFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  } else if (snapshot.hasError) {
-                    return Center(child: Text('Error: ${snapshot.error}'));
-                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return const Center(child: Text('No data available'));
-                  }
-
-                  final hospitals = snapshot.data!;
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "${hospitals.length} hospitals found",
-                        style: const TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      ...hospitals
-                          .map((hospital) => _medicalHospitalCard(hospital))
-                          .toList(),
-                    ],
                   );
                 },
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: const [
+                      BoxShadow(color: Colors.black12, blurRadius: 6),
+                    ],
+                  ),
+                  child: const Icon(Icons.tune),
+                ),
               ),
             ],
           ),
-        ),
+          const SizedBox(height: 12),
+
+          /// 🔹 SORTING INDICATOR
+          Row(
+            children: [
+              const Icon(Icons.sort, size: 16, color: Colors.grey),
+              const SizedBox(width: 4),
+              Text(
+                "Sorted by $_sortBy ($_order)",
+                style: const TextStyle(color: Colors.grey, fontSize: 12),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          /// 🔹 Categories (Blood Bank & Ambulance)
+          const Text("Medical Categories",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _medicalChip(
+                  icon: Icons.bloodtype_outlined,
+                  label: "Blood Bank",
+                  borderColor: Colors.red,
+                  isSelected: _bloodBank,
+                  onTap: () {
+                    setState(() {
+                      _bloodBank = !_bloodBank;
+                    });
+                    _fetchHospitals();
+                  },
+                ),
+                _medicalChip(
+                  icon: Icons.local_hospital_outlined,
+                  label: "Ambulance",
+                  borderColor: Colors.blue,
+                  isSelected: _ambulance,
+                  onTap: () {
+                    setState(() {
+                      _ambulance = !_ambulance;
+                    });
+                    _fetchHospitals();
+                  },
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          /// 🔹 Hospitals Found
+          Expanded(
+            child: FutureBuilder<List<Hospital>>(
+              future: _hospitalsFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                } else if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}'));
+                } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return const Center(child: Text('No hospitals available'));
+                }
+
+                final hospitals = snapshot.data!;
+                return ListView.builder(
+                  itemCount: hospitals.length,
+                  itemBuilder: (context, index) {
+                    return _medicalHospitalCard(hospitals[index]);
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -411,4 +385,4 @@ class _MedicalPageState extends State<MedicalPage> {
     ),
     );
   }
-}
+}

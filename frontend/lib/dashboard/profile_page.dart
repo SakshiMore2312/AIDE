@@ -1,4 +1,4 @@
-import 'package:educonnect/services/api_service.dart';
+import 'package:aide/services/api_service.dart';
 import 'package:flutter/material.dart';
 import '../theme_provider.dart';
 import 'subpage/saved_page.dart';

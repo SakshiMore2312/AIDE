@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:educonnect/services/api_service.dart';
+import 'package:aide/services/api_service.dart';
 
 class EducationDetailsPage extends StatefulWidget {
   final int id;

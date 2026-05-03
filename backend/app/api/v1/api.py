@@ -76,4 +76,4 @@ api_router.include_router(hospitals.router, prefix="/medical")
 api_router.include_router(doctors.router, prefix="/medical")
 api_router.include_router(blood_banks.router, prefix="/medical")
 api_router.include_router(ambulances.router, prefix="/medical")
-
+

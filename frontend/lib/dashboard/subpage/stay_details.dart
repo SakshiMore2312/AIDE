@@ -1,6 +1,6 @@
-import 'package:educonnect/models/pg.dart';
+import 'package:aide/models/pg.dart';
 import 'package:flutter/material.dart';
-import 'package:educonnect/services/api_service.dart';
+import 'package:aide/services/api_service.dart';
 
 class PGDetailsPage extends StatefulWidget {
   final PG pg;

@@ -1,6 +1,6 @@
 🚀 BACKEND INTEGRATION GUIDE FOR FRONTEND TEAM
 
-This guide provides all the necessary information to integrate the EduCare Connect frontend with the FastAPI backend.
+This guide provides all the necessary information to integrate the Aide frontend with the FastAPI backend.
 
 ---
 
