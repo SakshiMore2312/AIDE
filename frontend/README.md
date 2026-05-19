@@ -1,4 +1,4 @@
-# educonnect
+# AIDE (Educare-Connect)
 
 A new Flutter project.
 
